@@ -20,7 +20,7 @@ ship = pygame.transform.scale(ship_img, (50, 50))
 # Load hình gà
 chicken_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/ga.png")
 chicken_img = pygame.transform.scale(chicken_img, (50, 50))  
-
+  
 # Load hình đạn
 bullet_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/dan.png")
 bullet = pygame.transform.scale(bullet_img, (60, 60))
