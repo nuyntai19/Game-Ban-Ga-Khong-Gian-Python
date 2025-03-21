@@ -10,7 +10,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
 # Load hình nền
-background_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/background2.jpg")
+background_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/background3.jpg")
 background = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
 # Load hình tàu vũ trụ   
@@ -24,6 +24,10 @@ chicken_img = pygame.transform.scale(chicken_img, (50, 50))
 # Load hình đạn
 bullet_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/dan.png")
 bullet = pygame.transform.scale(bullet_img, (60, 60))
+
+#Load hình cục máu rơi bổ sung cho tàu
+heart_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/mauBoSung.png")
+heart_img = pygame.transform.scale(heart_img, (50, 50))
 
 # Đạn của gà
 enemy_bullet_img = pygame.image.load("C:/Users/ACER/OneDrive/game/data/dan_ga.png")
@@ -50,19 +54,26 @@ def run_game():
     global chicken
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
-    ship_speed = 1
+    ship_speed = 0.8
     ship_health = 100
 
     chickens = [[random.randint(0, WIDTH - 64), -random.randint(50, 300)] for _ in range(5)]
-    chicken_speed = 0.15
+    chicken_speed = 0.10
+
+    hearts = []
+    heart_speed = 0.3
+
+    heart_spawn_delay = random.randint(15000, 20000)  
+    last_heart_spawn_time = pygame.time.get_ticks() 
+
 
     bullets = []
     enemy_bullets = []
 
-    fire_delay = 150 # Tốc độ bắn của tàu
+    fire_delay = 170 # Tốc độ bắn của tàu
     last_shot_time = 0
 
-    enemy_fire_delay = 1000  # Chậm lại tốc độ bắn của gà
+    enemy_fire_delay = 1010  # Chậm lại tốc độ bắn của gà
     last_enemy_shot_time = pygame.time.get_ticks()
 
     running = True
@@ -89,7 +100,7 @@ def run_game():
             if keys[pygame.K_SPACE]:
                 current_time = pygame.time.get_ticks()
                 if current_time - last_shot_time > fire_delay:
-                    bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2, ship_y])
+                    bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2-2, ship_y - 40])
                     last_shot_time = current_time
 
             # Di chuyển gà
@@ -98,12 +109,27 @@ def run_game():
                 if chickens[i][1] > HEIGHT:
                     chickens[i] = [random.randint(0, WIDTH - 64), -random.randint(50, 300)]
 
+            #Cục máu rơi bổ sung cho tàu
+            for i in range(len(hearts)):
+                hearts[i][1] += heart_speed
+                if hearts[i][1] > HEIGHT:
+                    hearts[i] = [random.randint(0, WIDTH - 64), -random.randint(50, 300)]
+
             # Gà bắn đạn
             current_time = pygame.time.get_ticks()
             if current_time - last_enemy_shot_time > enemy_fire_delay:
                 chicken = random.choice(chickens)
                 enemy_bullets.append([chicken[0] + chicken_img.get_width() // 2 - enemy_bullet.get_width() // 2, chicken[1] + chicken_img.get_height()])
                 last_enemy_shot_time = current_time
+
+            # Tạo cục máu rơi bổ sung cho tàu
+                    # Kiểm tra nếu đã đủ thời gian để tạo cục máu mới
+            current_time = pygame.time.get_ticks()
+            if current_time - last_heart_spawn_time > heart_spawn_delay:
+                hearts.append([random.randint(0, WIDTH - 64), -random.randint(50, 300)])
+                last_heart_spawn_time = current_time  # Reset bộ đếm thời gian
+                heart_spawn_delay = random.randint(15000, 20000)  # Cập nhật thời gian chờ tiếp theo
+
 
             # Di chuyển đạn của tàu
             for b in bullets[:]:
@@ -116,6 +142,15 @@ def run_game():
                 eb[1] += 0.8 # Tốc độ giảm còn 0.8
                 if eb[1] > HEIGHT:
                     enemy_bullets.remove(eb)
+
+            # Kiểm tra va chạm giữa tàu và cục máu
+            for h in hearts[:]:
+                for i in range(len(hearts)):
+                    if ((hearts[i][0] - ship_x) ** 2 + (hearts[i][1] - ship_y) ** 2) ** 0.5 < 40:
+                        ship_health += 10
+                        if ship_health > 100:  # Giới hạn thanh máu tối đa là 100
+                            ship_health = 100
+                        hearts.remove(h)
 
             # Kiểm tra va chạm giữa đạn của tàu và gà
             for b in bullets[:]:
@@ -156,6 +191,9 @@ def run_game():
                 screen.blit(bullet, (b[0], b[1]))
             for eb in enemy_bullets:
                 screen.blit(enemy_bullet, (eb[0], eb[1]))
+
+            for h in hearts:
+                screen.blit(heart_img, (h[0], h[1]))
 
             # Hiển thị thanh máu
             pygame.draw.rect(screen, (255, 0, 0), (10, 10, ship_health * 2, 20))
