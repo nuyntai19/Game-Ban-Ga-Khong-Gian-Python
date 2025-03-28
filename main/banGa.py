@@ -131,9 +131,9 @@ def run_game(input_map1 = input_map):
         if not game_over:
             # Điều khiển tàu vũ trụ
             keys = pygame.key.get_pressed()
-            if keys[input_map1['move right']] and ship_x > 0:
+            if keys[input_map1['move right']] and ship_x < WIDTH - ship.get_width():
                 ship_x += ship_speed
-            if keys[input_map1['move left']] and ship_x < WIDTH - ship.get_width():
+            if keys[input_map1['move left']] and ship_x > 0:
                 ship_x -= ship_speed
             if keys[pygame.K_SPACE]:
                 current_time = pygame.time.get_ticks()
@@ -358,7 +358,7 @@ def main_menu():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button.rect.collidepoint(event.pos):
-                    print("Game Starting...")  # Placeholder for starting the game
+                    print("Game Starting...") 
                     return run_game()
                 if quit_button.rect.collidepoint(event.pos):
                     pygame.quit()
