@@ -6,7 +6,7 @@ from menu import *
 pygame.init()
 
 # Cấu hình cửa sổ game
-WIDTH, HEIGHT = 1280, 720
+WIDTH, HEIGHT = 1024, 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
@@ -133,9 +133,11 @@ def run_game(input_map1 = input_map):
             keys = pygame.key.get_pressed()
             if keys[input_map1['move right']] and ship_x < WIDTH - ship.get_width():
                 ship_x += ship_speed
+                print(f"pressed right")
             if keys[input_map1['move left']] and ship_x > 0:
                 ship_x -= ship_speed
-            if keys[pygame.K_SPACE]:
+                print(f"pressed left")
+            if keys[input_map1['shoot']]:
                 current_time = pygame.time.get_ticks()
                 if current_time - last_shot_time > fire_delay:
                     bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2-2, ship_y - 40])
@@ -331,7 +333,8 @@ def run_game(input_map1 = input_map):
             game_over_text = FONT.render("GAME OVER!", True, (255, 255, 255))
             screen.blit(game_over_text, (WIDTH // 2 - 80, HEIGHT // 2))
             restart_button = draw_restart_button()  # Vẽ nút chơi lại
-
+        clock = pygame.time.Clock()
+        clock.tick(680)
         pygame.display.update()
         
 # Main menu function

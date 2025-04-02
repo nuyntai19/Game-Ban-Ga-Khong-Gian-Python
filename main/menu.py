@@ -1,12 +1,12 @@
 import pygame, sys
 from UI import Button,Button1
 
-input_map = {'move right': pygame.K_d, 'move left': pygame.K_a}
+input_map = {'move right': pygame.K_d, 'move left': pygame.K_a , 'shoot': pygame.K_SPACE}
 # Initialize pygame
 pygame.init()
 
 # Game window configuration
-WIDTH, HEIGHT = 1280, 720
+WIDTH, HEIGHT = 1024, 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
@@ -15,10 +15,10 @@ BG_img = pygame.image.load("data/menu_bg.jpg")
 BG = pygame.transform.scale(BG_img, (WIDTH, HEIGHT))
 
 # Font setup
-Font = pygame.font.Font(None, 50)
+Font = pygame.font.Font(None, 40)
 # Font chữ hiển thị
 
-font = pygame.font.Font("fonts\RetroFont.ttf", 100)  # font name and size
+font = pygame.font.Font("fonts\RetroFont.ttf", 80)  # font name and size
 text = font.render("CHICKEN INVADERS", False, (100,255,100)) # surface for text
 textRect = text.get_rect()
 textRect.center = (WIDTH//2, HEIGHT//2 - 200)  # center of text is screen center
