@@ -6,7 +6,7 @@ from menu import *
 pygame.init()
 
 # Cấu hình cửa sổ game
-WIDTH, HEIGHT = 1280, 720
+WIDTH, HEIGHT = 1024, 720
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
@@ -51,6 +51,10 @@ boss_img = pygame.transform.scale(boss_img, (100, 100))
 boss_img_lv2 = pygame.image.load("data/boss2.png")
 boss_img_lv2 = pygame.transform.scale(boss_img_lv2, (120, 120))
 
+# Load hình boss cấp 3
+boss_img_lv3 = pygame.image.load("data/boss3.png")
+boss_img_lv3 = pygame.transform.scale(boss_img_lv3, (150, 150))
+
 # Font chữ hiển thị
 font = pygame.font.Font(None, 36)
 
@@ -69,20 +73,20 @@ def draw_restart_button():
 pygame.init()
 FONT = pygame.font.Font(None, 40)
 
-BG_COLOR = pygame.Color('gray12')
+BG_COLOR = pygame.Color('gray12') 
 GREEN = pygame.Color('lightseagreen')
 
 def run_game(input_map1 = input_map):
     global chicken
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
-    ship_speed = 0.8
+    ship_speed = 4 # Tốc độ di chuyển của tàu
     ship_health = 100
     chickens = [[random.randint(0, WIDTH - 64), -random.randint(50, 300)] for _ in range(5)]
-    chicken_speed = 0.10
+    chicken_speed = 0.5 # Tốc độ di chuyển của gà
 
     hearts = []
-    heart_speed = 0.3
+    heart_speed = 1
 
     heart_spawn_delay = random.randint(15000, 20000)  
     last_heart_spawn_time = pygame.time.get_ticks() 
@@ -94,19 +98,19 @@ def run_game(input_map1 = input_map):
     # Đạn của boss
     boss_bullets = []
 
-    fire_delay = 170 # Tốc độ bắn của tàu
+    fire_delay = 250 # Tốc độ bắn của tàu
     last_shot_time = 0
 
     enemy_fire_delay = 1010  # tốc độ bắn của gà
     last_enemy_shot_time = pygame.time.get_ticks()
 
-    boss_bullet_delay = 700 # Tốc độ bắn của boss
+    boss_bullet_delay = 600 # Tốc độ bắn của boss
     last_boss_bullet_time = pygame.time.get_ticks()
 
     score = 0 # Điểm số
     boss = None
     boss_img = None
-    boss_health = 100
+    boss_health = 300
 
     running = True
     game_over = False
@@ -135,11 +139,22 @@ def run_game(input_map1 = input_map):
                 ship_x += ship_speed
             if keys[input_map1['move left']] and ship_x > 0:
                 ship_x -= ship_speed
-            if keys[pygame.K_SPACE]:
+            if keys[input_map1['move up']] and ship_y > 200:
+                ship_y -= ship_speed
+            if keys[input_map1['move down']] and ship_y < HEIGHT - ship.get_height():
+                ship_y += ship_speed
+
+            if keys[input_map1['shoot']]:
                 current_time = pygame.time.get_ticks()
                 if current_time - last_shot_time > fire_delay:
-                    bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2-2, ship_y - 40])
+                    if boss_level >= 2 :  # Nếu boss đạt cấp 2 thì bắn 3 viên 
+                        bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2 - 18, ship_y - 40])  # Đạn trái
+                        bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2, ship_y - 40])      # Đạn giữa
+                        bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2 + 18, ship_y - 40])  # Đạn phải
+                    else:  # Nếu chưa có boss lv2 thì bắn 1 viên bình thường
+                        bullets.append([ship_x + ship.get_width() // 2 - bullet.get_width() // 2-2, ship_y - 40])
                     last_shot_time = current_time
+
 
             # Di chuyển gà
             for i in range(len(chickens)):
@@ -155,12 +170,21 @@ def run_game(input_map1 = input_map):
 
             # Boss bắn đạn
             if boss and current_time - last_boss_bullet_time > boss_bullet_delay:
-                boss_bullets.append([
-                    boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2, 
-                    boss[1] + boss_img.get_height()
-                ])
+                if boss_level >= 2:  # Khi boss đạt cấp 2, bắn 3 viên theo góc (-20, 0, 20)
+                    for angle in [-20, 0, 20]:  
+                        boss_bullets.append([
+                            boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2, 
+                            boss[1] + boss_img.get_height(), 
+                            angle
+                        ])
+                else:  # Khi boss chưa lên cấp 2, chỉ bắn 1 viên thẳng
+                    boss_bullets.append([
+                        boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2, 
+                        boss[1] + boss_img.get_height(), 
+                        0  # Góc 0 độ (bắn thẳng)
+                    ])
+                
                 last_boss_bullet_time = current_time
-
 
             # Gà bắn đạn
             current_time = pygame.time.get_ticks()
@@ -183,26 +207,34 @@ def run_game(input_map1 = input_map):
             if current_time - last_heart_spawn_time > heart_spawn_delay:
                 hearts.append([random.randint(0, WIDTH - 64), -random.randint(50, 300)])
                 last_heart_spawn_time = current_time  # Reset bộ đếm thời gian
-                heart_spawn_delay = random.randint(15000, 20000)  # Cập nhật thời gian chờ tiếp theo
+                
+                # Nếu boss cấp 2 trở lên, giảm thời gian spawn máu
+                if boss_level >= 2:
+                    heart_spawn_delay = random.randint(10000, 15000)  # 10s - 15s
+                else:
+                    heart_spawn_delay = random.randint(15000, 20000)  # 15s - 20s (bình thường)
+
 
 
             # Di chuyển đạn của tàu
             for b in bullets[:]:
-                b[1] -= 3
+                b[1] -= 4 # Điều chỉnh tốc độ bắn (giảm: thì giảm tốc độ bắn , tăng: thì tăng tốc độ bắn) 
                 if b[1] < 0:
                     bullets.remove(b)
 
             # Di chuyển đạn của gà 
             for eb in enemy_bullets[:]:
-                eb[1] += 0.8 # Tốc độ giảm còn 0.8
+                eb[1] += 2  # Điều chỉnh tốc độ bắn ( giảm: thì giảm tốc độ bắn , tăng: thì tăng tốc độ bắn)
                 if eb[1] > HEIGHT:
                     enemy_bullets.remove(eb)
 
             # Di chuyển đạn của boss
             for bb in boss_bullets[:]:
-                bb[1] += 1  # Điều chỉnh tốc độ bắn
+                bb[1] += 2  # Tốc độ rơi xuống
+                bb[0] += int(2 * (bb[2] / 20))  # Điều chỉnh hướng theo góc
                 if bb[1] > HEIGHT:
                     boss_bullets.remove(bb)
+
 
             # Kiểm tra va chạm giữa tàu và cục máu
             for h in hearts[:]:
@@ -225,7 +257,7 @@ def run_game(input_map1 = input_map):
                         score += 1
                         break
 
-             # Kiểm tra va chạm giữa đạn của tàu và boss lv1
+             # Kiểm tra va chạm giữa đạn của tàu và boss 
             if boss is not None and isinstance(boss, list) and len(boss) >= 2:
                 for b in bullets[:]:
                     if isinstance(b, list) and len(b) >= 2:
@@ -247,16 +279,15 @@ def run_game(input_map1 = input_map):
                 elapsed_time = pygame.time.get_ticks() - boss_respawn_time
                 print(f"⏳ Đã chờ {elapsed_time} ms để hồi sinh boss lv2")
                 
-                if elapsed_time > 3000:
-                    print("🔥 Hồi sinh boss lv2!")
-                    boss = [WIDTH // 2 - 60, 50]
-                    boss_speed = 0.4
-                    boss_img = boss_img_lv2
-                    boss_health = 200
-                    boss_level = 3
-
-
-
+                if score >= 30:
+                    if elapsed_time > 3000 :  
+                        print("🔥 Hồi sinh boss lv2!")
+                        boss = [WIDTH // 2 - 60, 50]
+                        boss_speed = 0.4
+                        boss_img = boss_img_lv2
+                        boss_health = 400
+                        boss_level = 3
+                        boss_bullet_delay = 1000  # Giảm thời gian bắn
 
             # Kiểm tra va chạm giữa đạn của boss và tàu
             for bb in boss_bullets[:]:
@@ -277,9 +308,9 @@ def run_game(input_map1 = input_map):
                     enemy_bullets.remove(eb)
 
             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
-            if score >= 10 and boss is None and boss_level == 1:
+            if score >= 20 and boss is None and boss_level == 1:
                 boss = [WIDTH // 2 - 50, 50]
-                boss_speed = 0.5
+                boss_speed = 0.8 
                 boss_img = pygame.image.load("data/boss1.png")
                 boss_img = pygame.transform.scale(boss_img, (100, 100))  
 
@@ -309,7 +340,7 @@ def run_game(input_map1 = input_map):
 
         # Vẽ tàu, gà, đạn
         if not game_over:
-            screen.blit(ship, (ship_x, ship_y))
+            screen.blit(ship, (ship_x, ship_y)) 
             for chicken_x, chicken_y in chickens:
                 screen.blit(chicken_img, (chicken_x, chicken_y))
             for b in bullets:
@@ -321,7 +352,7 @@ def run_game(input_map1 = input_map):
                 screen.blit(heart_img, (h[0], h[1]))
 
             score_text = FONT.render(f"Score: {score}", True, (255, 255, 255))
-            screen.blit(score_text, (WIDTH - 120, 10))
+            screen.blit(score_text, (WIDTH - 125, 10)) 
 
             # Hiển thị thanh máu
             pygame.draw.rect(screen, (255, 0, 0), (10, 10, ship_health * 2, 20))
@@ -331,7 +362,8 @@ def run_game(input_map1 = input_map):
             game_over_text = FONT.render("GAME OVER!", True, (255, 255, 255))
             screen.blit(game_over_text, (WIDTH // 2 - 80, HEIGHT // 2))
             restart_button = draw_restart_button()  # Vẽ nút chơi lại
-
+        clock = pygame.time.Clock()
+        clock.tick(120) 
         pygame.display.update()
         
 # Main menu function
