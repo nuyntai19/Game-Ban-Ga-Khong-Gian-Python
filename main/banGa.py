@@ -375,8 +375,8 @@ def main_menu():
         screen.blit(BG, (0, 0))
         screen.blit(text, textRect)
 
-        draw()
-        update()
+        update_buttons(buttons)
+        draw_buttons(buttons)
 
         start_button = buttons[0]
         option_button = buttons[1]
