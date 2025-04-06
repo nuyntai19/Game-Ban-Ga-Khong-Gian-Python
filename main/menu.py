@@ -2,7 +2,7 @@ import pygame, sys
 from UI import Button
 
 
-input_map = {'move right': pygame.K_d, 'move left': pygame.K_a, 'move up': pygame.K_w, 'move down': pygame.K_s, 'shoot': pygame.K_SPACE}
+input_map = {'move right': pygame.K_RIGHT, 'move left': pygame.K_LEFT, 'move up': pygame.K_UP, 'move down': pygame.K_DOWN, 'shoot': pygame.K_SPACE}
 # Initialize pygame
 pygame.init()
 
