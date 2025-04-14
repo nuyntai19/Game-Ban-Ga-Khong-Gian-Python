@@ -1,6 +1,14 @@
 import sys
 import pygame as pg
 import random
+# Khởi động mixer để chơi nhạc
+pg.mixer.init()
+
+# Tải nhạc nền
+pg.mixer.music.load("data/nhacnen1.mp3")
+
+# Phát nhạc nền lặp vô hạn
+pg.mixer.music.play(-1)
 
 # Cấu hình cửa sổ game
 WIDTH, HEIGHT = 1280, 720
@@ -181,9 +189,9 @@ def run_game():
         if not game_over:
             # Điều khiển tàu vũ trụ
             keys = pg.key.get_pressed()
-            if keys[input_map['move right']] and ship_x > 0:
+            if keys[input_map['move right']] and ship_x < WIDTH - ship.get_width():
                 ship_x += ship_speed
-            if keys[input_map['move left']] and ship_x < WIDTH - ship.get_width():
+            if keys[input_map['move left']] and ship_x > 0:
                 ship_x -= ship_speed
             if keys[pg.K_SPACE]:
                 current_time = pg.time.get_ticks()
@@ -306,8 +314,6 @@ def run_game():
                     boss_level = 3
 
 
-
-
             # Kiểm tra va chạm giữa đạn của boss và tàu
             for bb in boss_bullets[:]:
                 if ((bb[0] - ship_x) ** 2 + (bb[1] - ship_y) ** 2) ** 0.5 < 40:
@@ -331,10 +337,23 @@ def run_game():
                 boss = [WIDTH // 2 - 50, 50]
                 boss_speed = 0.5
                 boss_img = pg.image.load("data/boss1.png")
-                boss_img = pg.transform.scale(boss_img, (100, 100))  
+                boss_img = pg.transform.scale(boss_img, (100, 100))
 
+                # 🔁 Đổi nhạc nền khi xuất hiện boss lv1
+                pg.mixer.music.stop()
+                pg.mixer.music.load("data/nhacnen2.mp3")  
+                pg.mixer.music.play(-1)
+            if boss_health <= 0 and boss_level == 1:
+                boss = None
+                boss_speed = 0
+                boss_health = 0
+                boss_level = 2
+                boss_respawn_time = pg.time.get_ticks()
 
-
+                # 🔁 Đổi lại nhạc nền khi boss chết
+                pg.mixer.music.stop()
+                pg.mixer.music.load("data/nhacnen1.mp3")
+                pg.mixer.music.play(-1)
             # Hiển thị đạn của boss
             for bb in boss_bullets:
                 screen.blit(boss_bullet_img, (bb[0], bb[1]))
