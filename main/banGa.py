@@ -1,9 +1,14 @@
-import pygame
+import pygame as pg 
 import random
 import menu
 from menu import *
 # Khởi tạo pygame
 pygame.init()
+pg.mixer.init()
+pg.mixer.music.load("data/nhacnen1.mp3")
+
+# Phát nhạc nền lặp vô hạn
+pg.mixer.music.play(-1)
 
 # Cấu hình cửa sổ game
 WIDTH, HEIGHT = 1024, 720
@@ -90,7 +95,7 @@ def run_game(input_map1 = input_map):
 
     heart_spawn_delay = random.randint(15000, 20000)  
     last_heart_spawn_time = pygame.time.get_ticks() 
-
+    
     # Đạn của tàu và gà 
     bullets = []
     enemy_bullets = []
@@ -111,7 +116,7 @@ def run_game(input_map1 = input_map):
     boss = None
     boss_img = None
     boss_health = 300
-
+    boss1_chet = False
     running = True
     game_over = False
 
@@ -272,7 +277,29 @@ def run_game(input_map1 = input_map):
                                 boss_level = 2
                                 boss_respawn_time = pygame.time.get_ticks()  # Đặt thời gian hồi sinh cho boss lv2
                                 print(f"⏳ Boss lv2 sẽ hồi sinh sau 3s. boss_respawn_time = {boss_respawn_time}")
+             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
+            if score >= 5 and boss is None and boss_level == 1:
+                boss = [WIDTH // 2 - 50, 50]
+                boss_speed = 0.8 
+                boss_img = pygame.image.load("data/boss1.png")
+                boss_img = pygame.transform.scale(boss_img, (100, 100))  
 
+               # 🔁 Đổi nhạc nền khi xuất hiện boss lv1
+                pg.mixer.music.stop()
+                pg.mixer.music.load("data/nhacnen2.mp3")  
+                pg.mixer.music.play(-1)
+                boss1_chet = False
+            if boss is not None and boss_level == 1 and boss_health <= 0:
+                if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
+                    # 🔁 Đổi lại nhạc nền khi boss lv1 chết
+                    pg.mixer.music.stop()
+                    pg.mixer.music.load("data/nhacnen1.mp3")
+                    pg.mixer.music.play(-1)
+                    boss1_chet = True
+                
+                boss = None  # reset boss
+                boss_level = 2  # Chuẩn bị cho boss level 2
+                boss_respawn_time = pygame.time.get_ticks()  # Đặt thời gian hồi sinh cho boss lv2
             # Xuất hiện boss lv2 khi tiêu diệt thêm 20 con gà (score đạt 40)
             # Xuất hiện boss lv2 sau khi boss lv1 bị tiêu diệt 3 giây
             if boss is None and boss_respawn_time is not None:
@@ -288,7 +315,6 @@ def run_game(input_map1 = input_map):
                         boss_health = 400
                         boss_level = 3
                         boss_bullet_delay = 1000  # Giảm thời gian bắn
-
             # Kiểm tra va chạm giữa đạn của boss và tàu
             for bb in boss_bullets[:]:
                 if ((bb[0] - ship_x) ** 2 + (bb[1] - ship_y) ** 2) ** 0.5 < 40:
@@ -307,14 +333,7 @@ def run_game(input_map1 = input_map):
                     ship_health -= 10
                     enemy_bullets.remove(eb)
 
-            # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
-            if score >= 20 and boss is None and boss_level == 1:
-                boss = [WIDTH // 2 - 50, 50]
-                boss_speed = 0.8 
-                boss_img = pygame.image.load("data/boss1.png")
-                boss_img = pygame.transform.scale(boss_img, (100, 100))  
-
-
+           
 
             # Hiển thị đạn của boss
             for bb in boss_bullets:
