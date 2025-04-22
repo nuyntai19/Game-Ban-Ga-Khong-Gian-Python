@@ -72,7 +72,7 @@ def assignment_menu(input_map=input_map):
     selected_action = None
 
     while True:
-        screen.fill(BG_COLOR)
+        screen.blit(BG, (0, 0))
         key_list = create_key_list(input_map)
 
         for event in pygame.event.get():
@@ -101,7 +101,7 @@ def assignment_menu(input_map=input_map):
 
         # Draw the keybinding text
         for surf, rect, action in key_list:
-            screen.blit(surf, rect)
+            screen.blit(surf, rect,)
             if selected_action == action:
                 pygame.draw.rect(screen, GREEN, rect, 2)
 
