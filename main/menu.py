@@ -114,6 +114,19 @@ def assignment_menu(input_map=input_map):
 # Options menu function
 def options():
     running = True
+    volume = 0.5  # Giá trị mặc định 50%
+    
+    # Tạo thanh trượt âm lượng
+    slider_width = 300
+    slider_rect = pygame.Rect(WIDTH//2 - slider_width//2, HEIGHT//2 + 50, slider_width, 20)
+    knob_radius = 15
+    knob_x = slider_rect.x + (slider_rect.width * volume)
+    knob_rect = pygame.Rect(knob_x - knob_radius, slider_rect.centery - knob_radius, 
+                           knob_radius*2, knob_radius*2)
+    
+    # Biến để kiểm tra khi đang kéo thanh trượt
+    dragging = False
+    
     while running:
         screen.blit(BG, (0, 0))
 
@@ -121,21 +134,54 @@ def options():
         options_text = Font.render("OPTIONS MENU", True, (255, 255, 255))
         screen.blit(options_text, (WIDTH // 2 - 120, HEIGHT // 4))
         
+        # Vẽ thanh trượt nền
+        pygame.draw.rect(screen, (100, 100, 100), slider_rect, border_radius=10)
+        # Vẽ phần âm lượng đã chọn
+        filled_rect = pygame.Rect(slider_rect.x, slider_rect.y, 
+                                slider_rect.width * volume, slider_rect.height)
+        pygame.draw.rect(screen, (100, 255, 100), filled_rect, border_radius=10)
+        # Vẽ nút trượt
+        pygame.draw.circle(screen, (200, 200, 200), (knob_rect.centerx, knob_rect.centery), knob_radius)
+        pygame.draw.circle(screen, (50, 50, 50), (knob_rect.centerx, knob_rect.centery), knob_radius-5)
+        
+        # Hiển thị giá trị âm lượng
+        volume_text = Font.render(f"Volume: {int(volume*100)}%", True, (255, 255, 255))
+        screen.blit(volume_text, (WIDTH // 2 - 70, HEIGHT // 2 - 30))
+        
+        # Cập nhật và vẽ các nút khác
         update_buttons(buttons1)
         draw_buttons(buttons1)
 
-        keybind_button = buttons1[0]
-
-        pygame.display.update()
-    
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if keybind_button.rect.collidepoint(event.pos):
+                if buttons1[0].rect.collidepoint(event.pos):  # Keybind button
                     assignment_menu(input_map)
-            if event.type == pygame.QUIT:
+                # Kiểm tra click trên nút trượt
+                elif knob_rect.collidepoint(event.pos):
+                    dragging = True
+                # Kiểm tra click trực tiếp trên thanh trượt
+                elif slider_rect.collidepoint(event.pos):
+                    volume = (event.pos[0] - slider_rect.x) / slider_rect.width
+                    volume = max(0.0, min(1.0, volume))
+                    knob_rect.centerx = slider_rect.x + (slider_rect.width * volume)
+                    pygame.mixer.music.set_volume(volume)
+                    
+            elif event.type == pygame.MOUSEBUTTONUP:
+                dragging = False
+                
+            elif event.type == pygame.MOUSEMOTION and dragging:
+                # Tính toán vị trí mới dựa trên vị trí chuột
+                volume = (event.pos[0] - slider_rect.x) / slider_rect.width
+                volume = max(0.0, min(1.0, volume))
+                knob_rect.centerx = slider_rect.x + (slobider_rect.width * volume)
+                pygame.mixer.music.set_volume(volume)
+                
+            elif event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    running = False  # Return to main menu
+                    running = False
+
+        pygame.display.update()
 from banGa import main_menu

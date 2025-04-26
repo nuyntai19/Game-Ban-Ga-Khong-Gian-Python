@@ -142,3 +142,61 @@ def load_space_assets(width, height):
         'stars': stars,
         'star_img': star_img
     }
+class SpaceDemo:
+    def __init__(self, width, height):
+        pygame.init()
+        self.WIDTH = width
+        self.HEIGHT = height
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Space Background Demo")
+        self.clock = pygame.time.Clock()
+        self.running = True
+        
+        # Tải asset
+        assets = load_space_assets(width, height)
+        self.bg = assets['bg']
+        self.planets = assets['planets']
+        self.meteors = assets['meteors']
+        self.stars = assets['stars']
+        self.star_img = assets['star_img']
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+    def update(self):
+        for planet in self.planets:
+            planet.update()
+        for meteor in self.meteors:
+            meteor.update()
+
+    def draw(self):
+        if self.bg:
+            self.screen.blit(self.bg, (0, 0))
+        else:
+            self.screen.fill((0, 0, 10))
+
+        for star in self.stars:
+            if self.star_img:
+                self.screen.blit(self.star_img, star)
+            else:
+                pygame.draw.circle(self.screen, (255, 255, 255), star, 1)
+
+        for planet in self.planets:
+            planet.draw(self.screen)
+        for meteor in self.meteors:
+            meteor.draw(self.screen)
+
+        pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update()
+            self.draw()
+            self.clock.tick(60)
+        pygame.quit()
+if __name__ == "__main__":
+    game = SpaceDemo(1024, 720)
+    game.run()

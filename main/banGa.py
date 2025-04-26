@@ -17,7 +17,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
 # Load hình nền
-background_img = pygame.image.load("data/background3.jpg")
+background_img = pygame.image.load("data/bg6.jpg")
 background = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
 # Load hình tàu vũ trụ   
