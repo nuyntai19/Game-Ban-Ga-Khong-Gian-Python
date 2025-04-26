@@ -64,6 +64,9 @@ boss_img_lv3 = pygame.transform.scale(boss_img_lv3, (150, 150))
 # Font chữ hiển thị
 font = pygame.font.Font(None, 36)
 
+shake_time = 0  # Thời gian rung chấn
+shake_intensity = 5  # Cường độ rung (số pixel)
+
 #Biến input
 # This dict maps actions to the corresponding key scancodes.
 input_map = menu.input_map
@@ -85,12 +88,36 @@ GREEN = pygame.Color('lightseagreen')
 # Biến để quản lý vị trí của nền
 background_y = 0
 
+# Hàm vẽ chữ "Boss Level 1"
+def draw_boss_message(screen):
+    global boss_message_display_time
+    if boss_message_display_time > 0:  # Nếu vẫn còn thời gian hiển thị
+        font = pygame.font.Font(None, 74)
+        text = font.render("Boss Level 1", True, (255, 0, 0))  # Màu chữ đỏ
+        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(text, text_rect)
+
+# Hàm kiểm tra rung chấn
+def apply_screen_shake(screen):
+    global shake_time, shake_intensity  # Khai báo biến toàn cục
+    if shake_time > 0:
+        shake_offset_x = random.randint(-shake_intensity, shake_intensity)
+        shake_offset_y = random.randint(-shake_intensity, shake_intensity)
+        # Dịch chuyển màn hình
+        screen.blit(background, (shake_offset_x, shake_offset_y))  # background là hình nền của bạn
+        shake_time -= 1  # Giảm thời gian rung chấn
+    else:
+        # Khi hết rung chấn, hiển thị màn hình bình thường
+        screen.blit(background, (0, 0))
+
 def run_game(input_map1=input_map):
-    global chicken, background_y, background
+    global chicken, background_y, background, shake_time, last_update_time, boss_message_display_time
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
-    ship_speed = 4 # Tốc độ di chuyển của tàu
+    ship_speed = 4
     ship_health = 100
+    boss_message_display_time = 3000  # Hiển thị chữ "Boss Level 1" trong 3 giây
+    last_update_time = pygame.time.get_ticks()
     chickens = [[random.randint(0, WIDTH - 64), -random.randint(50, 300)] for _ in range(5)]
     chicken_speed = 0.5 # Tốc độ di chuyển của gà
 
@@ -127,17 +154,39 @@ def run_game(input_map1=input_map):
     boss_level = 1
     boss_respawn_time = None
 
+    pending_boss_spawn = False  # Cờ chờ xuất hiện boss level 1 sau rung chấn
+
+
+    
+    # Khởi tạo các biến
+    
+    boss_message_display_time = 0  # Thời gian hiển thị chữ "Boss Level 1"
+    boss_message_duration = 3000  # Thời gian hiển thị (3 giây)
+    boss_message_shown = False  # Cờ để kiểm soát việc đã hiển thị thông báo chưa
+
     clock = pygame.time.Clock()
 
     while running:
+        current_time = pygame.time.get_ticks()
+        delta_time = current_time - last_update_time
+        last_update_time = current_time
+
         # Di chuyển nền
-        background_y += 0.5 # Tốc độ cuộn nền (tăng giá trị để cuộn nhanh hơn)
+        background_y += 0.5
         if background_y >= HEIGHT:
             background_y = 0
 
-        # Vẽ nền (hiệu ứng cuộn)
-        screen.blit(background, (0, background_y))
-        screen.blit(background, (0, background_y - HEIGHT))
+        # Áp dụng rung chấn (nếu có)
+        if shake_time > 0:
+            apply_screen_shake(screen)
+        else:
+            screen.blit(background, (0, background_y))
+            screen.blit(background, (0, background_y - HEIGHT))
+
+        # Hiển thị chữ "Boss Level 1" (nếu cần)
+        if boss_message_display_time > 0:
+            draw_boss_message(screen)
+            boss_message_display_time -= delta_time
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -298,29 +347,42 @@ def run_game(input_map1=input_map):
                                 boss_level = 2
                                 boss_respawn_time = pygame.time.get_ticks()  # Đặt thời gian hồi sinh cho boss lv2
                                 print(f"⏳ Boss lv2 sẽ hồi sinh sau 3s. boss_respawn_time = {boss_respawn_time}")
-             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
-            if score >= 5 and boss is None and boss_level == 1:
-                boss = [WIDTH // 2 - 50, 50]
-                boss_speed = 0.8 
-                boss_img = pygame.image.load("data/boss1.png")
-                boss_img = pygame.transform.scale(boss_img, (100, 100))  
+            # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
+            # Khi đủ điểm, khởi động rung chấn và hiển thị chữ — chưa tạo boss
+            if score >= 5 and boss is None and boss_level == 1 and not pending_boss_spawn:
+                shake_time = 90  # Rung chấn ~1.5 giây nếu 60 FPS
+                boss_message_display_time = 1500  # Hiển thị chữ 1.5 giây (cùng thời gian rung)
+                pending_boss_spawn = True  # Đánh dấu chuẩn bị xuất hiện boss
 
-                # Đổi nhạc nền khi xuất hiện boss lv1
+            # Khi rung chấn kết thúc, mới tạo boss
+            if pending_boss_spawn and shake_time == 0 and boss is None and boss_level == 1:
+                boss = [WIDTH // 2 - 50, 50]
+                boss_speed = 0.8
+                boss_img = pygame.image.load("data/boss1.png")
+                boss_img = pygame.transform.scale(boss_img, (100, 100))
+                boss_health = 300
+
+                # Đổi nhạc nền khi boss xuất hiện
                 pg.mixer.music.stop()
-                pg.mixer.music.load("data/nhacnen2.mp3")  
+                pg.mixer.music.load("data/nhacnen2.mp3")
                 pg.mixer.music.play(-1)
+
                 boss1_chet = False
+                pending_boss_spawn = False  # Reset cờ
+
             if boss is not None and boss_level == 1 and boss_health <= 0:
-                if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
-                    # Đổi lại nhạc nền khi boss lv1 chết
-                    pg.mixer.music.stop()
-                    pg.mixer.music.load("data/nhacnen1.mp3")
-                    pg.mixer.music.play(-1)
-                    boss1_chet = True
-                
-                boss = None  # reset boss
-                boss_level = 2  # Chuẩn bị cho boss level 2
-                boss_respawn_time = pygame.time.get_ticks()  # Đặt thời gian hồi sinh cho boss lv2
+                            if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
+                                # Đổi lại nhạc nền khi boss lv1 chết
+                                pg.mixer.music.stop()
+                                pg.mixer.music.load("data/nhacnen1.mp3")
+                                pg.mixer.music.play(-1)
+                                boss1_chet = True
+                            
+                            boss = None  # reset boss
+                            boss_level = 2  # Chuẩn bị cho boss level 2
+                            boss_respawn_time = pygame.time.get_ticks() 
+
+             # Đặt thời gian hồi sinh cho boss lv2
             # Xuất hiện boss lv2 khi tiêu diệt thêm 20 con gà (score đạt 40)
             # Xuất hiện boss lv2 sau khi boss lv1 bị tiêu diệt 3 giây
             if boss is None and boss_respawn_time is not None:
@@ -354,8 +416,7 @@ def run_game(input_map1=input_map):
                     ship_health -= 10
                     enemy_bullets.remove(eb)
 
-           
-
+        
             # Hiển thị đạn của boss
             for bb in boss_bullets:
                 screen.blit(boss_bullet_img, (bb[0], bb[1]))
