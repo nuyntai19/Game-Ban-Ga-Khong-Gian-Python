@@ -2,6 +2,7 @@ import pygame as pg
 import random
 import menu
 from menu import *
+import math
 # Khởi tạo pygame
 pygame.init()
 pg.mixer.init()
@@ -57,9 +58,11 @@ boss_img = pygame.transform.scale(boss_img, (100, 100))
 boss_img_lv2 = pygame.image.load("data/boss2.png")
 boss_img_lv2 = pygame.transform.scale(boss_img_lv2, (120, 120))
 
-# Load hình boss cấp 3
-boss_img_lv3 = pygame.image.load("data/boss3.png")
-boss_img_lv3 = pygame.transform.scale(boss_img_lv3, (150, 150))
+# Load hình boss lv3 (2 trạng thái)
+boss_lv3_frames = []
+boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangThuong.png"), (150, 150)))
+boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangNangCap.png"), (150, 150)))
+
 
 # Font chữ hiển thị
 font = pygame.font.Font(None, 36)
@@ -148,6 +151,7 @@ def run_game(input_map1=input_map):
     boss_img = None
     boss_health = 300
     boss1_chet = False
+    boss2_chet = False 
     running = True
     game_over = False
 
@@ -245,19 +249,34 @@ def run_game(input_map1=input_map):
 
             # Boss bắn đạn
             if boss and current_time - last_boss_bullet_time > boss_bullet_delay:
-                if boss_level >= 2:  # Khi boss đạt cấp 2, bắn 3 viên theo góc (-20, 0, 20)
-                    for angle in [-20, 0, 20]:  
+                if boss_level == 1:
+                    # Boss cấp 1 bắn 1 viên thẳng
+                    boss_bullets.append([
+                        boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2,
+                        boss[1] + boss_img.get_height(),
+                        0  # Góc 0 độ (thẳng)
+                    ])
+                
+                elif boss_level == 2:
+                    # Boss cấp 2 bắn 3 viên theo góc
+                    for angle in [-20, 0, 20]:
                         boss_bullets.append([
-                            boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2, 
-                            boss[1] + boss_img.get_height(), 
+                            boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2,
+                            boss[1] + boss_img.get_height(),
                             angle
                         ])
-                else:  # Khi boss chưa lên cấp 2, chỉ bắn 1 viên thẳng
-                    boss_bullets.append([
-                        boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2, 
-                        boss[1] + boss_img.get_height(), 
-                        0  # Góc 0 độ (bắn thẳng)
-                    ])
+                
+                elif boss_level == 3:
+                    # Boss cấp 3 bắn tỏa tròn 360°
+                    num_bullets = 24
+                    center_x = boss[0] + boss_img.get_width() // 2
+                    center_y = boss[1] + boss_img.get_height() // 2
+                    speed = 3
+                    for i in range(num_bullets):
+                        angle = (2 * math.pi / num_bullets) * i
+                        vx = speed * math.cos(angle)
+                        vy = speed * math.sin(angle)
+                        boss_bullets.append([center_x, center_y, vx, vy])
                 
                 last_boss_bullet_time = current_time
 
@@ -305,9 +324,15 @@ def run_game(input_map1=input_map):
 
             # Di chuyển đạn của boss
             for bb in boss_bullets[:]:
-                bb[1] += 2  # Tốc độ rơi xuống
-                bb[0] += int(2 * (bb[2] / 20))  # Điều chỉnh hướng theo góc
-                if bb[1] > HEIGHT:
+                if boss_level == 3 and len(bb) == 4:
+                    bb[0] += bb[2]  # vx
+                    bb[1] += bb[3]  # vy
+                else:
+                    bb[1] += 2
+                    bb[0] += int(2 * (bb[2] / 20))  # giữ cho boss 1 và 2
+
+                # Xoá đạn nếu vượt màn hình
+                if bb[0] < -50 or bb[0] > WIDTH + 50 or bb[1] > HEIGHT + 50 or bb[1] < -50:
                     boss_bullets.remove(bb)
 
 
@@ -341,12 +366,23 @@ def run_game(input_map1=input_map):
                             boss_health -= 10
                             if boss_health <= 0:
                                 print(f"🔥 Boss {boss_level} bị tiêu diệt, đặt boss = None")
-                                boss = None  # Xóa boss lv1
-                                boss_speed = 0  # Đặt lại tốc độ của boss
-                                boss_health = 0  # Đặt lại máu của boss
-                                boss_level = 2
-                                boss_respawn_time = pygame.time.get_ticks()  # Đặt thời gian hồi sinh cho boss lv2
-                                print(f"⏳ Boss lv2 sẽ hồi sinh sau 3s. boss_respawn_time = {boss_respawn_time}")
+
+                                boss = None
+                                boss_speed = 0
+                                boss_health = 0
+
+                                if boss_level == 1:
+                                    boss1_chet = True
+                                    boss_level = 2
+                                elif boss_level == 2:
+                                    boss2_chet = True
+                                    boss_level = 3
+                                elif boss_level == 3:
+                                    print("🎉 Boss level 3 đã tiêu diệt - Kết thúc hoặc chuyển cảnh!")
+
+                                boss_respawn_time = pygame.time.get_ticks()
+
+
             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
             # Khi đủ điểm, khởi động rung chấn và hiển thị chữ — chưa tạo boss
             if score >= 5 and boss is None and boss_level == 1 and not pending_boss_spawn:
@@ -371,33 +407,56 @@ def run_game(input_map1=input_map):
                 pending_boss_spawn = False  # Reset cờ
 
             if boss is not None and boss_level == 1 and boss_health <= 0:
-                            if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
+                if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
                                 # Đổi lại nhạc nền khi boss lv1 chết
                                 pg.mixer.music.stop()
                                 pg.mixer.music.load("data/nhacnen1.mp3")
                                 pg.mixer.music.play(-1)
                                 boss1_chet = True
                             
-                            boss = None  # reset boss
-                            boss_level = 2  # Chuẩn bị cho boss level 2
-                            boss_respawn_time = pygame.time.get_ticks() 
+                boss = None  # reset boss
+                boss_level = 2  # Chuẩn bị cho boss level 2
+                boss_respawn_time = pygame.time.get_ticks()            
 
-             # Đặt thời gian hồi sinh cho boss lv2
-            # Xuất hiện boss lv2 khi tiêu diệt thêm 20 con gà (score đạt 40)
-            # Xuất hiện boss lv2 sau khi boss lv1 bị tiêu diệt 3 giây
+            if boss is not None and boss_level == 2 and boss_health <= 0:
+                if not boss2_chet:
+                    print("🔥 Boss cấp 2 bị tiêu diệt")
+                    boss2_chet = True  
+                    boss_respawn_time = pygame.time.get_ticks()
+                boss = None
+                boss_speed = 0
+                boss_health = 0
+                boss_level = 3
+
+
+                
+
+            # Xuất hiện boss lv tiếp theo sau khi boss lv cũ bị tiêu diệt 3 giây
+            # Xuất hiện boss lv tiếp theo sau khi boss cũ bị tiêu diệt 3 giây
             if boss is None and boss_respawn_time is not None:
                 elapsed_time = pygame.time.get_ticks() - boss_respawn_time
-                print(f"⏳ Đã chờ {elapsed_time} ms để hồi sinh boss lv2")
-                
-                if score >= 30:
-                    if elapsed_time > 3000 :  
-                        print("🔥 Hồi sinh boss lv2!")
-                        boss = [WIDTH // 2 - 60, 50]
-                        boss_speed = 0.4
-                        boss_img = boss_img_lv2
-                        boss_health = 400
-                        boss_level = 3
-                        boss_bullet_delay = 1000  # Giảm thời gian bắn
+                print(f"⏳ Đã chờ {elapsed_time} ms để hồi sinh boss mới")
+
+                # Hồi sinh boss lv2 nếu chưa chết và boss_level đang là 2
+                if not boss2_chet and boss_level == 2 and score >= 10 and elapsed_time > 3000:
+                    print("🔥 Hồi sinh boss lv2!")
+                    boss = [WIDTH // 2 - 60, 50]
+                    boss_speed = 0.4
+                    boss_img = boss_img_lv2
+                    boss_health = 400
+
+                # Hồi sinh boss lv3 nếu boss_level là 3 (và boss2 đã chết)
+                if boss2_chet and boss_level == 3 and score >= 15 and elapsed_time > 3000:
+                    print("🔥 Hồi sinh boss lv3!")
+                    boss = [WIDTH // 2 - 75, 50]
+                    boss_speed = 0.6
+                    boss_health = 500
+                    boss_img = boss_lv3_frames[0]  # dùng ảnh thường
+                    boss_bullet_delay = 900
+
+
+
+
             # Kiểm tra va chạm giữa đạn của boss và tàu
             for bb in boss_bullets[:]:
                 if ((bb[0] - ship_x) ** 2 + (bb[1] - ship_y) ** 2) ** 0.5 < 40:
@@ -422,15 +481,17 @@ def run_game(input_map1=input_map):
                 screen.blit(boss_bullet_img, (bb[0], bb[1]))
 
             
-            if boss:
+            if boss is not None:
                 boss[0] += boss_speed
                 if boss[0] <= 0 or boss[0] >= WIDTH - boss_img.get_width():
                     boss_speed = -boss_speed
                 
                 if boss_level == 1:
                     screen.blit(boss_img, (boss[0], boss[1]))
-                else:
+                elif boss_level == 2:
                     screen.blit(boss_img_lv2, (boss[0], boss[1]))
+                elif boss_level == 3:
+                    screen.blit(boss_lv3_frames[0], (boss[0], boss[1]))
 
 
             # Kiểm tra Game Over
