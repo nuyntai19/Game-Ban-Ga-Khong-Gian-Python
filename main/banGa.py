@@ -7,6 +7,7 @@ pygame.init()
 pg.mixer.init()
 pg.mixer.music.load("data/nhacnen1.mp3")
 
+
 # Phát nhạc nền lặp vô hạn
 pg.mixer.music.play(-1)
 
@@ -81,8 +82,11 @@ FONT = pygame.font.Font(None, 40)
 BG_COLOR = pygame.Color('gray12') 
 GREEN = pygame.Color('lightseagreen')
 
-def run_game(input_map1 = input_map):
-    global chicken
+# Biến để quản lý vị trí của nền
+background_y = 0
+
+def run_game(input_map1=input_map):
+    global chicken, background_y, background
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
     ship_speed = 4 # Tốc độ di chuyển của tàu
@@ -122,8 +126,18 @@ def run_game(input_map1 = input_map):
 
     boss_level = 1
     boss_respawn_time = None
+
+    clock = pygame.time.Clock()
+
     while running:
-        screen.blit(background, (0, 0))
+        # Di chuyển nền
+        background_y += 0.5 # Tốc độ cuộn nền (tăng giá trị để cuộn nhanh hơn)
+        if background_y >= HEIGHT:
+            background_y = 0
+
+        # Vẽ nền (hiệu ứng cuộn)
+        screen.blit(background, (0, background_y))
+        screen.blit(background, (0, background_y - HEIGHT))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -136,7 +150,14 @@ def run_game(input_map1 = input_map):
                 if restart_button.collidepoint(mouse_x, mouse_y):
                     game_over = False  # Đặt lại trạng thái game
                     run_game()  # Chạy lại game
-        
+
+            if game_over and event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                if restart_button.collidepoint(mouse_x, mouse_y):
+                    game_over = False
+                    run_game()
+                    continue
+
         if not game_over:
             # Điều khiển tàu vũ trụ
             keys = pygame.key.get_pressed()
@@ -284,14 +305,14 @@ def run_game(input_map1 = input_map):
                 boss_img = pygame.image.load("data/boss1.png")
                 boss_img = pygame.transform.scale(boss_img, (100, 100))  
 
-               # 🔁 Đổi nhạc nền khi xuất hiện boss lv1
+                # Đổi nhạc nền khi xuất hiện boss lv1
                 pg.mixer.music.stop()
                 pg.mixer.music.load("data/nhacnen2.mp3")  
                 pg.mixer.music.play(-1)
                 boss1_chet = False
             if boss is not None and boss_level == 1 and boss_health <= 0:
                 if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
-                    # 🔁 Đổi lại nhạc nền khi boss lv1 chết
+                    # Đổi lại nhạc nền khi boss lv1 chết
                     pg.mixer.music.stop()
                     pg.mixer.music.load("data/nhacnen1.mp3")
                     pg.mixer.music.play(-1)
@@ -381,8 +402,7 @@ def run_game(input_map1 = input_map):
             game_over_text = FONT.render("GAME OVER!", True, (255, 255, 255))
             screen.blit(game_over_text, (WIDTH // 2 - 80, HEIGHT // 2))
             restart_button = draw_restart_button()  # Vẽ nút chơi lại
-        clock = pygame.time.Clock()
-        clock.tick(120) 
+        clock.tick(60) 
         pygame.display.update()
         
 # Main menu function
