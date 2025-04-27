@@ -12,11 +12,12 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chicken Invaders")
 
 # Load background image
-BG_img = pygame.image.load("data/menu_bg.jpg")
+BG_img = pygame.image.load("data/menu_bg.png")
 BG = pygame.transform.scale(BG_img, (WIDTH, HEIGHT))
 
 # Font setup
 Font = pygame.font.Font(None, 40)
+FontTitle = pygame.font.Font(None, 70)
 
 # Font chữ hiển thị
 # font name and size
@@ -31,27 +32,27 @@ textRect.center = (WIDTH//2, HEIGHT//2 - 200)
 
 # Start
 start_button_img = pygame.image.load("data/buttons/Start_Button.png")
-start_button = pygame.transform.scale(start_button_img, (300, 80))
+start_button = pygame.transform.scale(start_button_img, (298.5, 135.5))
 
 # Options
-option_button_img = pygame.image.load("data/buttons/Options_Button.png")
-option_button = pygame.transform.scale(option_button_img, (300, 80))
+option_button_img = pygame.image.load("data/buttons/Option_Button.png")
+option_button = pygame.transform.scale(option_button_img, (298.5, 135.5))
 
 # Quit
 quit_button_img = pygame.image.load("data/buttons/Quit_Button.png")
-quit_button = pygame.transform.scale(quit_button_img, (300, 80))
+quit_button = pygame.transform.scale(quit_button_img, (298.5, 135.5))
 
 # Keybind (ở options menu)
 keybind_button_img = pygame.image.load("data/buttons/Keybind_Button.png")
-keybind_button = pygame.transform.scale(keybind_button_img, (300, 80))
+keybind_button = pygame.transform.scale(keybind_button_img, (298.5, 135.5))
 
 # Return (ở pause menu, options menu)
 return_button_img = pygame.image.load("data/buttons/Return_Button.png")
-return_button = pygame.transform.scale(return_button_img, (300, 80))
+return_button = pygame.transform.scale(return_button_img, (298.5, 135.5))
 
 # To Menu (ở pause menu)
 to_menu_button_img = pygame.image.load("data/buttons/To_Menu_Button.png")
-to_menu_button = pygame.transform.scale(to_menu_button_img, (300, 80))
+to_menu_button = pygame.transform.scale(to_menu_button_img, (298.5, 135.5))
 
 # Gán các ảnh này vào từng button tương ứng
 menus = {
@@ -144,7 +145,7 @@ def assignment_menu(input_map=input_map):
 # Options menu
 def options():
     running = True
-    volume = 0.5  # Giá trị mặc định 50%
+    volume = 0.3  # Giá trị mặc định 30%
     
     # Tạo thanh trượt âm lượng
     slider_width = 300
@@ -161,8 +162,9 @@ def options():
         screen.blit(BG, (0, 0))
 
         # Vẽ label cho option
-        options_text = Font.render("OPTIONS MENU", True, (255, 255, 255))
-        screen.blit(options_text, (WIDTH // 2 - 120, HEIGHT // 4))
+        options_text = FontTitle.render("OPTIONS MENU", True, (255, 255, 255))
+        text_rect = options_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 300 ))
+        screen.blit(options_text, text_rect.topleft)
         
         # Vẽ thanh trượt nền
         pygame.draw.rect(screen, (100, 100, 100), slider_rect, border_radius=10)
@@ -175,9 +177,13 @@ def options():
         pygame.draw.circle(screen, (50, 50, 50), (knob_rect.centerx, knob_rect.centery), knob_radius-5)
         
         # Hiển thị giá trị âm lượng
-        volume_text = Font.render(f"Volume: {int(volume*100)}%", True, (255, 255, 255))
-        screen.blit(volume_text, (WIDTH // 2 - 70, HEIGHT // 2 - 30))
-        
+        volume_text = Font.render(f"Volume: {int(volume * 100)}%", True, (255, 255, 255))
+
+        # Căn giữa volume text dựa vào slider
+        vol_text_rect = volume_text.get_rect(center=(slider_rect.centerx, slider_rect.top - 30))  # 30 pixel phía trên thanh trượt
+
+        screen.blit(volume_text, vol_text_rect)
+                
         # Cập nhật và vẽ các nút khác
         update_buttons(menus["options_menu"])
         draw_buttons(menus["options_menu"])
