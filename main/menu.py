@@ -17,27 +17,59 @@ BG = pygame.transform.scale(BG_img, (WIDTH, HEIGHT))
 
 # Font setup
 Font = pygame.font.Font(None, 40)
+
 # Font chữ hiển thị
-
-font = pygame.font.Font("fonts\RetroFont.ttf", 80)  # font name and size
-text = font.render("CHICKEN INVADERS", False, (100,255,100)) # surface for text
+# font name and size
+font = pygame.font.Font("fonts\RetroFont.ttf", 80)  
+# surface cho text
+text = font.render("CHICKEN INVADERS", False, (100,255,100)) 
 textRect = text.get_rect()
-textRect.center = (WIDTH//2, HEIGHT//2 - 200)  # center of text is screen center
+# vị trí center của title của game
+textRect.center = (WIDTH//2, HEIGHT//2 - 200)  
 
-# Create buttons
-buttons = [
-    Button((WIDTH // 2, HEIGHT // 2), "START"),
-    Button((WIDTH // 2, HEIGHT // 2 + 150), "OPTIONS"),
-    Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT"),
-]
-buttons1 = [
-    Button((WIDTH // 2, HEIGHT // 2 + 300), "Keybind"),
-]
-buttons2 = [
-    Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN"),
-    Button((WIDTH // 2, HEIGHT // 2), "TO MENU"),
-    Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT"),
-]
+# load ảnh cho các button
+
+# Start
+start_button_img = pygame.image.load("data/buttons/Start_Button.png")
+start_button = pygame.transform.scale(start_button_img, (300, 80))
+
+# Options
+option_button_img = pygame.image.load("data/buttons/Options_Button.png")
+option_button = pygame.transform.scale(option_button_img, (300, 80))
+
+# Quit
+quit_button_img = pygame.image.load("data/buttons/Quit_Button.png")
+quit_button = pygame.transform.scale(quit_button_img, (300, 80))
+
+# Keybind (ở options menu)
+keybind_button_img = pygame.image.load("data/buttons/Keybind_Button.png")
+keybind_button = pygame.transform.scale(keybind_button_img, (300, 80))
+
+# Return (ở pause menu)
+return_button_img = pygame.image.load("data/buttons/Return_Button.png")
+return_button = pygame.transform.scale(return_button_img, (300, 80))
+
+# To Menu (ở pause menu)
+to_menu_button_img = pygame.image.load("data/buttons/To_Menu_Button.png")
+to_menu_button = pygame.transform.scale(to_menu_button_img, (300, 80))
+
+# Gán các ảnh này vào từng button tương ứng
+menus = {
+    "main_menu": [
+        Button((WIDTH // 2, HEIGHT // 2), "START", image=start_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "OPTIONS", image=option_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", image=quit_button),
+    ],
+    "options_menu": [
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "Keybind", image=keybind_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", image=return_button),
+    ],
+    "pause_menu": [
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", image=return_button),
+        Button((WIDTH // 2, HEIGHT // 2), "TO MENU", image=to_menu_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", image=quit_button),
+    ],
+}
 
 
 
@@ -49,8 +81,6 @@ def draw_buttons(button_list):
 def update_buttons(button_list):
     for button in button_list:
         button.update()
-
-
         
 FONT = pygame.font.Font(None, 40)
 
@@ -59,7 +89,7 @@ GREEN = pygame.Color('lightseagreen')
 
         
 def create_key_list(input_map = input_map):
-    """A list of surfaces of the action names + assigned keys, rects and the actions."""
+    """Tạo 1 list gồm chứa bề mặt của các nút hành động + nút đã được chọn cho hành động đó và vị trí."""
     key_list = []
     for y, (action, value) in enumerate(input_map.items()):
         surf = FONT.render('{}: {}'.format(action, pygame.key.name(value)), True, GREEN)
@@ -86,32 +116,35 @@ def assignment_menu(input_map=input_map):
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Check for UI buttons
-                if buttons2[0].rect.collidepoint(event.pos):  # RETURN
+                # RETURN
+                if menus["pause_menu"][0].rect.collidepoint(event.pos):  
                     return input_map
-                elif buttons2[1].rect.collidepoint(event.pos):  # TO MENU
+                # TO MENU
+                elif menus["pause_menu"][1].rect.collidepoint(event.pos):  
                     return main_menu()
-                elif buttons2[2].rect.collidepoint(event.pos):  # QUIT
+                # QUIT
+                elif menus["pause_menu"][2].rect.collidepoint(event.pos):  
                     pygame.quit()
                     sys.exit()
 
-                # Check for keybinding clicks
+                # Kiểm tra nút binding nào được chọn
                 for surf, rect, action in key_list:
                     if rect.collidepoint(event.pos):
                         selected_action = action
 
-        # Draw the keybinding text
+        # Vẽ các nút để thực hiện binding
         for surf, rect, action in key_list:
             screen.blit(surf, rect,)
             if selected_action == action:
                 pygame.draw.rect(screen, GREEN, rect, 2)
 
-        update_buttons(buttons2)
-        draw_buttons(buttons2)
+        update_buttons(menus["pause_menu"])
+        draw_buttons(menus["pause_menu"])
 
         pygame.display.flip()
 
         
-# Options menu function
+# Options menu
 def options():
     running = True
     volume = 0.5  # Giá trị mặc định 50%
@@ -130,7 +163,7 @@ def options():
     while running:
         screen.blit(BG, (0, 0))
 
-        # Render options text
+        # Vẽ label cho option
         options_text = Font.render("OPTIONS MENU", True, (255, 255, 255))
         screen.blit(options_text, (WIDTH // 2 - 120, HEIGHT // 4))
         
@@ -149,13 +182,17 @@ def options():
         screen.blit(volume_text, (WIDTH // 2 - 70, HEIGHT // 2 - 30))
         
         # Cập nhật và vẽ các nút khác
-        update_buttons(buttons1)
-        draw_buttons(buttons1)
+        update_buttons(menus["options_menu"])
+        draw_buttons(menus["options_menu"])
 
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if buttons1[0].rect.collidepoint(event.pos):  # Keybind button
+                if menus["options_menu"][0].rect.collidepoint(event.pos):  
+                # Keybind button
                     assignment_menu(input_map)
+                if menus["options_menu"][1].rect.collidepoint(event.pos):  
+                # Return button
+                    return input_map
                 # Kiểm tra click trên nút trượt
                 elif knob_rect.collidepoint(event.pos):
                     dragging = True
@@ -173,7 +210,7 @@ def options():
                 # Tính toán vị trí mới dựa trên vị trí chuột
                 volume = (event.pos[0] - slider_rect.x) / slider_rect.width
                 volume = max(0.0, min(1.0, volume))
-                knob_rect.centerx = slider_rect.x + (slobider_rect.width * volume)
+                knob_rect.centerx = slider_rect.x + (slider_rect.width * volume)
                 pygame.mixer.music.set_volume(volume)
                 
             elif event.type == pygame.QUIT:

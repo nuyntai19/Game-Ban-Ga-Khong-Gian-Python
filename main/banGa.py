@@ -536,12 +536,12 @@ def main_menu():
         screen.blit(BG, (0, 0))
         screen.blit(text, textRect)
 
-        update_buttons(buttons)
-        draw_buttons(buttons)
+        update_buttons(menus["main_menu"])
+        draw_buttons(menus["main_menu"])
 
-        start_button = buttons[0]
-        option_button = buttons[1]
-        quit_button = buttons[2]
+        start_button = menus["main_menu"][0]
+        option_button = menus["main_menu"][1]
+        quit_button = menus["main_menu"][2]
 
         pygame.display.update()
 
