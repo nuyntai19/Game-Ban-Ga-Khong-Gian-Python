@@ -8,13 +8,13 @@ class Button:
         pg.font.Font(os.path.join("fonts", "RetroFont.ttf"), 50),
         pg.font.Font(os.path.join("fonts", "RetroFont.ttf"), 55),
     ]
-    COLOR = (255, 255, 255)  # Sử dụng mã màu thay vì "GRAY"
+    COLOR = (255, 255, 255)  #"GRAY"
 
     def __init__(self, center: tuple[int, int], text: str, image: pg.Surface = None):
-        self.w = 300
-        self.h = 80
+        self.w = 298.5
+        self.h = 135.5
 
-        self.center = center  # Sử dụng center thay vì (x, y)
+        self.center = center  # thêm center thay vì (x, y)
         self.x = center[0] - self.w // 2
         self.y = center[1] - self.h // 2
 
