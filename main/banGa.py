@@ -214,16 +214,16 @@ def run_game(input_map1=input_map):
         if not game_over:
             # Điều khiển tàu vũ trụ
             keys = pygame.key.get_pressed()
-            if keys[input_map1['move right']] and ship_x < WIDTH - ship.get_width():
+            if keys[input_map1['Move Right']] and ship_x < WIDTH - ship.get_width():
                 ship_x += ship_speed
-            if keys[input_map1['move left']] and ship_x > 0:
+            if keys[input_map1['Move Left']] and ship_x > 0:
                 ship_x -= ship_speed
-            if keys[input_map1['move up']] and ship_y > 200:
+            if keys[input_map1['Move Up']] and ship_y > 200:
                 ship_y -= ship_speed
-            if keys[input_map1['move down']] and ship_y < HEIGHT - ship.get_height():
+            if keys[input_map1['Move Down']] and ship_y < HEIGHT - ship.get_height():
                 ship_y += ship_speed
 
-            if keys[input_map1['shoot']]:
+            if keys[input_map1['Shoot']]:
                 current_time = pygame.time.get_ticks()
                 if current_time - last_shot_time > fire_delay:
                     if boss_level >= 2 :  # Nếu boss đạt cấp 2 thì bắn 3 viên 
