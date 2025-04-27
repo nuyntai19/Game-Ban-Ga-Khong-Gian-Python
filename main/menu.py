@@ -45,7 +45,7 @@ quit_button = pygame.transform.scale(quit_button_img, (300, 80))
 keybind_button_img = pygame.image.load("data/buttons/Keybind_Button.png")
 keybind_button = pygame.transform.scale(keybind_button_img, (300, 80))
 
-# Return (ở pause menu)
+# Return (ở pause menu, options menu)
 return_button_img = pygame.image.load("data/buttons/Return_Button.png")
 return_button = pygame.transform.scale(return_button_img, (300, 80))
 
@@ -70,9 +70,6 @@ menus = {
         Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", image=quit_button),
     ],
 }
-
-
-
 
 def draw_buttons(button_list):
     for button in button_list:
