@@ -2,7 +2,7 @@ import pygame, sys
 from UI import Button
 
 
-input_map = {'move right': pygame.K_RIGHT, 'move left': pygame.K_LEFT, 'move up': pygame.K_UP, 'move down': pygame.K_DOWN, 'shoot': pygame.K_SPACE}
+input_map = {'Move Right': pygame.K_RIGHT, 'Move Left': pygame.K_LEFT, 'Move Up': pygame.K_UP, 'Move Down': pygame.K_DOWN, 'Shoot': pygame.K_SPACE}
 # Initialize pygame
 pygame.init()
 
@@ -16,8 +16,8 @@ BG_img = pygame.image.load("data/menu_bg.png")
 BG = pygame.transform.scale(BG_img, (WIDTH, HEIGHT))
 
 # Font setup
-Font = pygame.font.Font(None, 40)
-FontTitle = pygame.font.Font(None, 70)
+Fontt = pygame.font.Font("fonts\RetroFont.ttf", 40)
+FontTitle = pygame.font.Font("fonts\RetroFont.ttf", 70)
 
 # Font chữ hiển thị
 # font name and size
@@ -83,15 +83,15 @@ def update_buttons(button_list):
 FONT = pygame.font.Font(None, 40)
 
 BG_COLOR = pygame.Color('gray12')
-GREEN = pygame.Color('lightseagreen')
+GREEN = pygame.Color('yellow')
 
         
 def create_key_list(input_map = input_map):
     """Tạo 1 list gồm chứa bề mặt của các nút hành động + nút đã được chọn cho hành động đó và vị trí."""
     key_list = []
     for y, (action, value) in enumerate(input_map.items()):
-        surf = FONT.render('{}: {}'.format(action, pygame.key.name(value)), True, GREEN)
-        rect = surf.get_rect(topleft=(40, y*40+20))
+        surf = Fontt.render('{}: {}'.format(action, pygame.key.name(value)), True, GREEN)
+        rect = surf.get_rect(center=(WIDTH // 2, y * 40 + HEIGHT // 10))
         key_list.append([surf, rect, action])
     return key_list
 
@@ -149,7 +149,7 @@ def options():
     
     # Tạo thanh trượt âm lượng
     slider_width = 300
-    slider_rect = pygame.Rect(WIDTH//2 - slider_width//2, HEIGHT//2 + 50, slider_width, 20)
+    slider_rect = pygame.Rect(WIDTH//2 - slider_width//2, HEIGHT//3 + 50, slider_width, 20)
     knob_radius = 15
     knob_x = slider_rect.x + (slider_rect.width * volume)
     knob_rect = pygame.Rect(knob_x - knob_radius, slider_rect.centery - knob_radius, 
@@ -177,7 +177,7 @@ def options():
         pygame.draw.circle(screen, (50, 50, 50), (knob_rect.centerx, knob_rect.centery), knob_radius-5)
         
         # Hiển thị giá trị âm lượng
-        volume_text = Font.render(f"Volume: {int(volume * 100)}%", True, (255, 255, 255))
+        volume_text = Fontt.render(f"Volume: {int(volume * 100)}%", True, (255, 255, 255))
 
         # Căn giữa volume text dựa vào slider
         vol_text_rect = volume_text.get_rect(center=(slider_rect.centerx, slider_rect.top - 30))  # 30 pixel phía trên thanh trượt

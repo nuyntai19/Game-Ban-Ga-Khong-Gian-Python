@@ -11,8 +11,8 @@ class Button:
     COLOR = (255, 255, 255)  #"GRAY"
 
     def __init__(self, center: tuple[int, int], text: str, image: pg.Surface = None):
-        self.w = 298.5
-        self.h = 135.5
+        self.w = int(298.5 * 0.8)
+        self.h = int(135.5 * 0.8)
 
         self.center = center  # thêm center thay vì (x, y)
         self.x = center[0] - self.w // 2
