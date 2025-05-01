@@ -3,11 +3,11 @@ import random
 import menu
 from menu import *
 import math
+
 # Khởi tạo pygame
 pygame.init()
 pg.mixer.init()
 pg.mixer.music.load("data/nhacnen1.mp3")
-
 
 # Phát nhạc nền lặp vô hạn
 pg.mixer.music.play(-1)
@@ -75,7 +75,6 @@ shake_time = 0  # Thời gian rung chấn
 shake_intensity = 6  # Cường độ rung (số pixel)
 
 # Biến input
-# This dict maps actions to the corresponding key scancodes.
 input_map = menu.input_map
 
 # Hàm vẽ nút chơi lại
@@ -121,15 +120,15 @@ def run_game(input_map1=input_map):
     global chicken, background_y, background, shake_time, last_update_time, boss_message_display_time
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
-    ship_speed = 4
-    ship_health = 100
+    ship_speed = menu.game_ship_variables["ship_speed"]
+    ship_health = menu.game_ship_variables["ship_health"]
     boss_message_display_time = 3000  # Hiển thị chữ "Boss Level 1" trong 3 giây
     last_update_time = pygame.time.get_ticks()
     chickens = [[random.randint(0, WIDTH - 64), -random.randint(50, 300)] for _ in range(5)]
-    chicken_speed = 0.7 # Tốc độ di chuyển của gà
+    chicken_speed = menu.game_enemy_variables["chicken_speed"] # Tốc độ di chuyển của gà
 
     hearts = []
-    heart_speed = 1
+    heart_speed = menu.game_enemy_variables["heart_speed"]
 
     heart_spawn_delay = random.randint(15000, 20000)  
     last_heart_spawn_time = pygame.time.get_ticks() 
@@ -141,19 +140,19 @@ def run_game(input_map1=input_map):
     # Đạn của boss
     boss_bullets = []
 
-    fire_delay = 250 # Tốc độ bắn của tàu
+    fire_delay = menu.game_ship_variables["fire_delay"] # Tốc độ bắn của tàu
     last_shot_time = 0
 
-    enemy_fire_delay = 1010  # tốc độ bắn của gà
+    enemy_fire_delay = menu.game_enemy_variables["enemy_fire_delay"]  # tốc độ bắn của gà
     last_enemy_shot_time = pygame.time.get_ticks()
 
-    boss_bullet_delay = 600 # Tốc độ bắn của boss
+    boss_bullet_delay = menu.game_enemy_variables["boss_bullet_delay"] # Tốc độ bắn của boss
     last_boss_bullet_time = pygame.time.get_ticks()
 
     score = 0 # Điểm số
     boss = None
     boss_img = None
-    boss_health = 300
+    boss_health = menu.game_enemy_variables["boss_health"]
     boss1_chet = False
     boss2_chet = False 
     running = True

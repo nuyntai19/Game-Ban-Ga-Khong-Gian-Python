@@ -2,7 +2,28 @@ import pygame, sys
 from UI import Button
 
 
-input_map = {'Move Right': pygame.K_RIGHT, 'Move Left': pygame.K_LEFT, 'Move Up': pygame.K_UP, 'Move Down': pygame.K_DOWN, 'Shoot': pygame.K_SPACE}
+input_map = {
+            'Move Right': pygame.K_RIGHT,
+            'Move Left': pygame.K_LEFT,
+            'Move Up': pygame.K_UP,
+            'Move Down': pygame.K_DOWN,
+            'Shoot': pygame.K_SPACE
+}
+
+game_enemy_variables = {
+            'chicken_speed': 0.7, # Tốc độ di chuyển của gà
+            'heart_speed': 1,
+            'enemy_fire_delay': 1010, # Tốc độ bắn của boss
+            'boss_bullet_delay': 600,
+            'boss_health': 300,
+}
+
+game_ship_variables = {
+            'ship_speed': 4,
+            'ship_health': 100,
+            'fire_delay': 250, # Tốc độ bắn của tàu
+}
+
 # Initialize pygame
 pygame.init()
 
@@ -57,19 +78,24 @@ to_menu_button = pygame.transform.scale(to_menu_button_img, (298.5, 135.5))
 # Gán các ảnh này vào từng button tương ứng
 menus = {
     "main_menu": [
-        Button((WIDTH // 2, HEIGHT // 2), "START", image=start_button),
-        Button((WIDTH // 2, HEIGHT // 2 + 150), "OPTIONS", image=option_button),
-        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", image=quit_button),
+        Button((WIDTH // 2, HEIGHT // 2), "START", "",image=start_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "OPTIONS", "",image=option_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", "",image=quit_button),
     ],
     "options_menu": [
-        Button((WIDTH // 2, HEIGHT // 2 + 300), "Keybind", image=keybind_button),
-        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", image=return_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "Keybind", "",image=keybind_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", "",image=return_button),
     ],
     "pause_menu": [
-        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", image=return_button),
-        Button((WIDTH // 2, HEIGHT // 2), "TO MENU", image=to_menu_button),
-        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", image=quit_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 150), "RETURN", "",image=return_button),
+        Button((WIDTH // 2, HEIGHT // 2), "TO MENU", "",image=to_menu_button),
+        Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", "",image=quit_button),
     ],
+    "game_mode":[
+        Button((WIDTH // 2 - 150, HEIGHT // 2), "HARD",  "small",image=start_button),
+        Button((WIDTH // 2, HEIGHT // 2), "MEDIUM", "small", image=start_button),
+        Button((WIDTH // 2 + 150, HEIGHT // 2), "EASY", "small", image=start_button),
+    ]
 }
 
 def draw_buttons(button_list):
@@ -140,7 +166,28 @@ def assignment_menu(input_map=input_map):
         draw_buttons(menus["pause_menu"])
 
         pygame.display.flip()
-
+        
+def game_mode():
+    for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Check for UI buttons
+                # EASy
+                if menus["game_mode"][0].rect.collidepoint(event.pos):
+                    factor = 0.75
+                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
+                
+                # MEDIUM
+                elif menus["game_mode"][1].rect.collidepoint(event.pos):
+                    factor = 1
+                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
+                    
+                # HARD
+                elif menus["game_mode"][2].rect.collidepoint(event.pos):
+                    factor = 1.5
+                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
         
 # Options menu
 def options():
@@ -149,18 +196,22 @@ def options():
     
     # Tạo thanh trượt âm lượng
     slider_width = 300
-    slider_rect = pygame.Rect(WIDTH//2 - slider_width//2, HEIGHT//3 + 50, slider_width, 20)
+    slider_rect = pygame.Rect(WIDTH//2 - slider_width//2, HEIGHT//3 -50, slider_width, 20)
     knob_radius = 15
     knob_x = slider_rect.x + (slider_rect.width * volume)
-    knob_rect = pygame.Rect(knob_x - knob_radius, slider_rect.centery - knob_radius, 
-                           knob_radius*2, knob_radius*2)
+    knob_rect = pygame.Rect(knob_x - knob_radius, slider_rect.centery - knob_radius,
+                            knob_radius*2, knob_radius*2)
     
     # Biến để kiểm tra khi đang kéo thanh trượt
     dragging = False
     
     while running:
         screen.blit(BG, (0, 0))
-
+        
+        #tạo nút chỉnh độ khó
+        update_buttons(menus["game_mode"])
+        draw_buttons(menus["game_mode"])
+        
         # Vẽ label cho option
         options_text = FontTitle.render("OPTIONS MENU", True, (255, 255, 255))
         text_rect = options_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 300 ))
