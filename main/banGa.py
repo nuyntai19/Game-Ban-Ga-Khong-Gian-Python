@@ -362,7 +362,7 @@ def run_game(input_map1=input_map):
                         score += 1
                         break
 
-             # Kiểm tra va chạm giữa đạn của tàu và boss 
+            # Kiểm tra va chạm giữa đạn của tàu và boss 
             if boss is not None and isinstance(boss, list) and len(boss) >= 2:
                 boss_center_x = boss[0] + boss_img.get_width() // 2
                 boss_center_y = boss[1] + boss_img.get_height() // 2
@@ -403,6 +403,8 @@ def run_game(input_map1=input_map):
                 shake_time = 90  # Rung chấn ~1.5 giây nếu 60 FPS
                 boss_message_display_time = 1500  # Hiển thị chữ 1.5 giây (cùng thời gian rung)
                 pending_boss_spawn = True  # Đánh dấu chuẩn bị xuất hiện boss
+                print(game_enemy_variables["boss_health"])  # Debug: kiểm tra xem có phải None không
+
 
             # Khi rung chấn kết thúc, mới tạo boss
             if pending_boss_spawn and shake_time == 0 and boss is None and boss_level == 1:
@@ -592,6 +594,6 @@ def main_menu():
                     pygame.quit()
                     sys.exit()
                 if option_button.rect.collidepoint(event.pos):
-                    options()  # Open options menu
+                    options(game_enemy_variables)  # Open options menu
 if __name__ == '__main__':
     main_menu()

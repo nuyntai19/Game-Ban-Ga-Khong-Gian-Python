@@ -2,6 +2,8 @@ import pygame, sys
 from UI import Button
 
 
+# Initialize pygame
+pygame.init()
 input_map = {
             'Move Right': pygame.K_RIGHT,
             'Move Left': pygame.K_LEFT,
@@ -24,8 +26,6 @@ game_ship_variables = {
             'fire_delay': 250, # Tốc độ bắn của tàu
 }
 
-# Initialize pygame
-pygame.init()
 
 # Game window configuration
 WIDTH, HEIGHT = 1024, 720
@@ -177,30 +177,41 @@ def assignment_menu(input_map=input_map):
 
         pygame.display.flip()
         
-def game_mode():
-    for event in pygame.event.get():
+def game_mode(events, game_enemy_variables = game_enemy_variables):
+    for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Check for UI buttons
                 # EASy
-                if menus["game_mode"][0].rect.collidepoint(event.pos):
-                    factor = 0.75
-                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
-                
+                if menus["game_mode"][0].rect.collidepoint(event.pos):   
+                    game_enemy_variables["chicken_speed"] = 0.7
+                    game_enemy_variables["enemy_fire_delay"] = 505
+                    game_enemy_variables["boss_bullet_delay"] = 400
+                    game_enemy_variables["heart_speed"] = 1
+                    game_enemy_variables["boss_health"] = 300
                 # MEDIUM
                 elif menus["game_mode"][1].rect.collidepoint(event.pos):
-                    factor = 1
-                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
+                    game_enemy_variables["chicken_speed"] = 0.7*1.5
+                    game_enemy_variables["enemy_fire_delay"] = 505*1.5
+                    game_enemy_variables["boss_bullet_delay"] = 400*1.5
+                    game_enemy_variables["heart_speed"] = 1*1.5
+                    game_enemy_variables["boss_health"] = 300*1
                     
                 # HARD
                 elif menus["game_mode"][2].rect.collidepoint(event.pos):
-                    factor = 1.5
-                    game_enemy_variables = {key: value * factor for key, value in game_enemy_variables.items()}
+                    game_enemy_variables["chicken_speed"] = 0.7*2
+                    game_enemy_variables["enemy_fire_delay"] = 505*2
+                    game_enemy_variables["boss_bullet_delay"] = 400*2
+                    game_enemy_variables["heart_speed"] = 1*2
+                    game_enemy_variables["boss_health"] = 300*2
+            return game_enemy_variables
+
+    print(game_enemy_variables)
+    return game_enemy_variables
         
 # Options menu
-def options():
+def options( game_enemy_variables):
     running = True
     volume = 0.3  # Giá trị mặc định 30%
     
@@ -249,7 +260,10 @@ def options():
         update_buttons(menus["options_menu"])
         draw_buttons(menus["options_menu"])
 
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        game_enemy_variables = game_mode(events,game_enemy_variables)
+        
+        for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if menus["options_menu"][0].rect.collidepoint(event.pos):  
                 # Keybind button
