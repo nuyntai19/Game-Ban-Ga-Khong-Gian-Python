@@ -75,6 +75,16 @@ return_button = pygame.transform.scale(return_button_img, (298.5, 135.5))
 to_menu_button_img = pygame.image.load("data/buttons/To_Menu_Button.png")
 to_menu_button = pygame.transform.scale(to_menu_button_img, (298.5, 135.5))
 
+#Easy Medium Hard
+Easy_Button_img = pygame.image.load("data/buttons/Easy_Button.png")
+Easy_Button = pygame.transform.scale(Easy_Button_img, (298.5, 135.5))
+
+Medium_Button_img = pygame.image.load("data/buttons/Medium_Button.png")
+Medium_Button = pygame.transform.scale(Medium_Button_img, (298.5, 135.5))
+
+Hard_Button_img = pygame.image.load("data/buttons/Hard_Button.png")
+Hard_Button = pygame.transform.scale(Hard_Button_img, (298.5, 135.5))
+
 # Gán các ảnh này vào từng button tương ứng
 menus = {
     "main_menu": [
@@ -92,9 +102,9 @@ menus = {
         Button((WIDTH // 2, HEIGHT // 2 + 300), "QUIT", "",image=quit_button),
     ],
     "game_mode":[
-        Button((WIDTH // 2 - 150, HEIGHT // 2), "HARD",  "small",image=start_button),
-        Button((WIDTH // 2, HEIGHT // 2), "MEDIUM", "small", image=start_button),
-        Button((WIDTH // 2 + 150, HEIGHT // 2), "EASY", "small", image=start_button),
+        Button((WIDTH // 2 - 150, HEIGHT // 2), "EASY", "small", image=Easy_Button),
+        Button((WIDTH // 2, HEIGHT // 2), "MEDIUM", "small", image=Medium_Button),
+        Button((WIDTH // 2 + 150, HEIGHT // 2), "HARD",  "small",image=Hard_Button),
     ]
 }
 
