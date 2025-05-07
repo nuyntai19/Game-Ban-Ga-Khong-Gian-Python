@@ -248,13 +248,64 @@ GREEN = pygame.Color('lightseagreen')
 # Biến để quản lý vị trí của nền
 background_y = 0
 
-# Hàm vẽ chữ "Boss Level 1"
-def draw_boss_message(screen):
+# Hàm vẽ chữ cho các boss
+def draw_boss_message(screen, boss_level, is_upgrade=False):
     global boss_message_display_time
     if boss_message_display_time > 0:  # Nếu vẫn còn thời gian hiển thị
-        font = pygame.font.Font(None, 74)
-        text = font.render("BOSS Level 1", True,(255, 0, 255))  # Màu chữ đỏ
+        # Tạo hiệu ứng nhấp nháy
+        alpha = int(255 * (1 + math.sin(pygame.time.get_ticks() * 0.005)) / 2)
+        
+        # Sử dụng font RetroFont với kích thước nhỏ hơn cho thông báo nâng cấp
+        if is_upgrade:
+            font = pygame.font.Font("fonts/RetroFont.ttf", 60)  # Giảm kích thước xuống 60
+        else:
+            font = pygame.font.Font("fonts/RetroFont.ttf", 80)
+        
+        # Tạo gradient màu
+        colors = [
+            (255, 0, 0),    # Đỏ
+            (255, 165, 0),  # Cam
+            (255, 255, 0),  # Vàng
+            (0, 255, 0),    # Xanh lá
+            (0, 255, 255),  # Cyan
+            (0, 0, 255),    # Xanh dương
+            (255, 0, 255)   # Tím
+        ]
+        
+        # Tính toán màu dựa trên thời gian
+        color_index = (pygame.time.get_ticks() // 100) % len(colors)
+        next_color_index = (color_index + 1) % len(colors)
+        color_progress = (pygame.time.get_ticks() % 100) / 100
+        
+        # Lấy màu hiện tại và màu tiếp theo
+        current_color = colors[color_index]
+        next_color = colors[next_color_index]
+        
+        # Tính toán màu gradient
+        r = int(current_color[0] * (1 - color_progress) + next_color[0] * color_progress)
+        g = int(current_color[1] * (1 - color_progress) + next_color[1] * color_progress)
+        b = int(current_color[2] * (1 - color_progress) + next_color[2] * color_progress)
+        
+        # Tạo text dựa trên level và trạng thái nâng cấp
+        if is_upgrade:
+            text_content = "BOSS LEVEL 3 UPGRADED!"
+        else:
+            text_content = f"BOSS LEVEL {boss_level}"
+            
+        # Tạo text với màu gradient
+        text = font.render(text_content, True, (r, g, b))
+        text.set_alpha(alpha)
+        
+        # Tính toán vị trí để căn giữa
         text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        
+        # Vẽ bóng đổ
+        shadow = font.render(text_content, True, (0, 0, 0))
+        shadow.set_alpha(alpha // 2)
+        shadow_rect = shadow.get_rect(center=(WIDTH // 2 + 4, HEIGHT // 2 + 4))
+        screen.blit(shadow, shadow_rect)
+        
+        # Vẽ text chính
         screen.blit(text, text_rect)
 
 # Hàm kiểm tra rung chấn
@@ -276,11 +327,18 @@ def run_game(input_map1=input_map):
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
     ship_speed = menu.game_ship_variables["ship_speed"]
     ship_health = menu.game_ship_variables["ship_health"]
-    boss_message_display_time = 3000  # Hiển thị chữ "Boss Level 1" trong 3 giây
+    boss_message_display_time = 3000
     last_update_time = pygame.time.get_ticks()
-    last_burst_time = pygame.time.get_ticks()  # Khởi tạo biến last_burst_time
-    burst_count = 0  # Khởi tạo biến burst_count
-    last_inner_cannon_time = pygame.time.get_ticks()  # Khởi tạo biến last_inner_cannon_time
+    last_burst_time = pygame.time.get_ticks()
+    burst_count = 0
+    last_inner_cannon_time = pygame.time.get_ticks()
+    damage_flash_time = 0
+    last_ship_health = ship_health
+    
+    # Thêm biến cho hiệu ứng shader
+    ship_trail = []  # Danh sách lưu các vị trí trước đó của tàu
+    last_ship_pos = (ship_x, ship_y)  # Vị trí cuối cùng của tàu
+    trail_length = 5  # Số lượng vệt sáng theo sau
     chickens = [[random.randint(0, WIDTH - 64), -random.randint(50, 300)] for _ in range(5)]
     chicken_speed = menu.game_enemy_variables["chicken_speed"] # Tốc độ di chuyển của gà
 
@@ -327,7 +385,8 @@ def run_game(input_map1=input_map):
     
     boss_message_display_time = 0  # Thời gian hiển thị chữ "Boss Level 1"
     boss_message_duration = 3000  # Thời gian hiển thị (3 giây)
-    boss_message_shown = False  # Cờ để kiểm soát việc đã hiển thị thông báo chưa
+    current_boss_message = None  # Khởi tạo biến current_boss_message
+    showing_upgrade_message = False  # Cờ để kiểm soát việc hiển thị thông báo nâng cấp
 
     clock = pygame.time.Clock()
 
@@ -350,7 +409,7 @@ def run_game(input_map1=input_map):
 
         # Hiển thị chữ "Boss Level 1" (nếu cần)
         if boss_message_display_time > 0:
-            draw_boss_message(screen)
+            draw_boss_message(screen, boss_level)
             boss_message_display_time -= delta_time
 
         for event in pygame.event.get():
@@ -375,6 +434,7 @@ def run_game(input_map1=input_map):
         if not game_over:
             # Điều khiển tàu vũ trụ
             keys = pygame.key.get_pressed()
+            old_x, old_y = ship_x, ship_y  # Lưu vị trí cũ
             if keys[input_map1['Move Right']] and ship_x < WIDTH - ship.get_width():
                 ship_x += ship_speed
             if keys[input_map1['Move Left']] and ship_x > 0:
@@ -383,6 +443,12 @@ def run_game(input_map1=input_map):
                 ship_y -= ship_speed
             if keys[input_map1['Move Down']] and ship_y < HEIGHT - ship.get_height():
                 ship_y += ship_speed
+
+            # Cập nhật vệt sáng khi tàu di chuyển
+            if (old_x, old_y) != (ship_x, ship_y):  # Nếu tàu di chuyển
+                ship_trail.append((ship_x, ship_y))
+                if len(ship_trail) > trail_length:
+                    ship_trail.pop(0)  # Xóa vị trí cũ nhất
 
             if keys[input_map1['Shoot']]:
                 current_time = pygame.time.get_ticks()
@@ -408,6 +474,56 @@ def run_game(input_map1=input_map):
                 if hearts[i][1] > HEIGHT:
                     hearts[i] = [random.randint(0, WIDTH - 64), -random.randint(50, 300)]
 
+            # Kiểm tra va chạm giữa đạn của boss và tàu
+            ship_center_x = ship_x + ship.get_width() // 2
+            ship_center_y = ship_y + ship.get_height() // 2
+
+            for bb in boss_bullets[:]:
+                if isinstance(bb, BossBulletLv1):
+                    bb.update()
+                    # Kiểm tra va chạm với tàu
+                    if ((bb.x - ship_center_x) ** 2 + (bb.y - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        bb.active = False
+                    if not bb.active:
+                        boss_bullets.remove(bb)
+                elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
+                    # Di chuyển đạn theo góc
+                    bb[1] += 4  # Tăng tốc độ di chuyển xuống
+                    bb[0] += math.sin(math.radians(bb[2])) * 2  # Tăng tốc độ di chuyển ngang
+                    
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        boss_bullets.remove(bb)
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
+                elif len(bb) == 5 and bb[4] == 3:  # Boss lv3 thường
+                    bb[0] += bb[2]  # vx
+                    bb[1] += bb[3]  # vy
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        boss_bullets.remove(bb)
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[0] < -50 or bb[0] > WIDTH + 50 or bb[1] < -50 or bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
+                elif len(bb) == 6 and bb[4] == 3:  # Boss lv3 nâng cấp
+                    bb[0] += bb[2]  # vx
+                    bb[1] += bb[3]  # vy
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        boss_bullets.remove(bb)
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[0] < -50 or bb[0] > WIDTH + 50 or bb[1] < -50 or bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
+
             # Boss bắn đạn
             if boss and current_time - last_boss_bullet_time > boss_bullet_delay and len(boss_bullets) < 300:
                 if boss_level == 1:
@@ -418,13 +534,15 @@ def run_game(input_map1=input_map):
                     ))
                 
                 elif boss_level == 2:
-                    for angle in [-20, 0, 20]:
-                        boss_bullets.append([
-                            boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2,
-                            boss[1] + boss_img.get_height(),
-                            angle,
-                            2
-                        ])
+                    # Tăng thời gian giữa các lần bắn và tốc độ đạn
+                    if len(boss_bullets) < 30:  # Giảm số lượng đạn tối đa
+                        for angle in [-45, 0, 45]:
+                            boss_bullets.append([
+                                boss[0] + boss_img.get_width() // 2 - boss_bullet_img.get_width() // 2 + 10, 
+                                boss[1] + boss_img.get_height(),
+                                angle,
+                                2
+                            ])
                 
                 elif boss_level == 3:
                     if boss_lv3_upgraded:
@@ -436,29 +554,29 @@ def run_game(input_map1=input_map):
                             plasma_beams.append(PlasmaBeam(*gun_right, is_left=False))
                             last_plasma_time = current_time
 
-                        # 🔸 Bắn đạn thường từ nòng trong (bắn mỗi giây)
-                        if boss_lv3_upgraded and current_time - last_inner_cannon_time > INNER_CANNON_INTERVAL:
+                        # 🔸 Bắn đạn thường từ nòng trong
+                        if current_time - last_inner_cannon_time > INNER_CANNON_INTERVAL:
                             last_inner_cannon_time = current_time
                             # Bắn từ nòng trong trái
                             boss_bullets.append([
-                                boss[0] + 155,  # Nòng trong trái
-                                boss[1] + 260,  # Vị trí y (tăng từ 200 lên 250)
-                                0, 7,  # Tốc độ đạn
+                                boss[0] + 150,
+                                boss[1] + 260,
+                                0, 7,
                                 3, 
                                 "normal"
                             ])
                             # Bắn từ nòng trong phải
                             boss_bullets.append([
-                                boss[0] + 245,  # Nòng trong phải
-                                boss[1] + 260,  # Vị trí y (tăng từ 200 lên 250)
-                                0, 7,  # Tốc độ đạn
+                                boss[0] + 250,
+                                boss[1] + 260,
+                                0, 7,
                                 3,
                                 "normal"
                             ])
 
                     else:
                         # Boss thường: bắn vòng tròn
-                        num_bullets = 18
+                        num_bullets = 20
                         center_x = boss[0] + boss_img.get_width() // 2
                         center_y = boss[1] + boss_img.get_height() // 2
                         speed = 3
@@ -521,34 +639,47 @@ def run_game(input_map1=input_map):
                 if isinstance(bb, BossBulletLv1):
                     bb.update()
                     # Kiểm tra va chạm với tàu
-                    if ((bb.x - ship_x) ** 2 + (bb.y - ship_y) ** 2) ** 0.5 < 40:
+                    if ((bb.x - ship_center_x) ** 2 + (bb.y - ship_center_y) ** 2) ** 0.5 < 40:
                         ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
                         bb.active = False
                     if not bb.active:
                         boss_bullets.remove(bb)
-                elif len(bb) == 5 and bb[4] == 3:
-                    bb[0] += bb[2]  # vx
-                    bb[1] += bb[3]  # vy
-                elif len(bb) == 6 and bb[4] == 3:
-                    bb[0] += bb[2]  # vx
-                    bb[1] += bb[3]  # vy
-                elif len(bb) == 4 and isinstance(bb[2], (int, float)):
-                    bb[1] += 2
-                    bb[0] = int(bb[0]) + int(2 * (bb[2] / 20))
-                elif len(bb) == 3 and isinstance(bb[0], str):
-                    bb[2] += 4
-
-                if (
-                    (isinstance(bb, BossBulletLv1) and not bb.active) or
-                    (isinstance(bb, list) and (
-                        (isinstance(bb[0], (int, float)) and (bb[0] < -50 or bb[0] > WIDTH + 50)) or
-                        (bb[1] < -50 or bb[1] > HEIGHT + 50)
-                    ))
-                ):
-                    if isinstance(bb, list):
+                elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
+                    # Di chuyển đạn theo góc
+                    bb[1] += 4  # Tăng tốc độ di chuyển xuống
+                    bb[0] += math.sin(math.radians(bb[2])) * 2  # Tăng tốc độ di chuyển ngang
+                    
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
                         boss_bullets.remove(bb)
-
-
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
+                elif len(bb) == 5 and bb[4] == 3:  # Boss lv3 thường
+                    bb[0] += bb[2]  # vx
+                    bb[1] += bb[3]  # vy
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        boss_bullets.remove(bb)
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[0] < -50 or bb[0] > WIDTH + 50 or bb[1] < -50 or bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
+                elif len(bb) == 6 and bb[4] == 3:  # Boss lv3 nâng cấp
+                    bb[0] += bb[2]  # vx
+                    bb[1] += bb[3]  # vy
+                    # Kiểm tra va chạm với tàu
+                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 10
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        boss_bullets.remove(bb)
+                    # Kiểm tra nếu đạn ra khỏi màn hình
+                    elif bb[0] < -50 or bb[0] > WIDTH + 50 or bb[1] < -50 or bb[1] > HEIGHT + 50:
+                        boss_bullets.remove(bb)
 
 
 
@@ -588,9 +719,16 @@ def run_game(input_map1=input_map):
                             bullets.remove(b)
                             boss_health -= 10
                             if boss_level == 3 and not boss_lv3_upgraded and boss_health <= menu.game_enemy_variables["boss_health"] * 0.2:
+                                # Kích hoạt hiệu ứng nâng cấp và rung chấn cùng lúc
+                                shake_time = 150
+                                boss_message_display_time = 2500
+                                current_boss_message = "upgrade"
                                 boss_lv3_upgraded = True
-                                boss_health = 800  # Tăng máu lên 800 khi nâng cấp
-                                print(f"Boss lv3 nâng cấp! Máu mới: {boss_health}")
+                                boss_health = 800
+                                boss_img = boss_lv3_frames[1]
+                                pg.mixer.music.stop()
+                                pg.mixer.music.load("data/nhacnen2.mp3")
+                                pg.mixer.music.play(-1)
                             if boss_health <= 0:
                                 print(f"🔥 Boss {boss_level} bị tiêu diệt, đặt boss = None")
                                 # Xóa plasma beam ngay khi boss chết
@@ -610,111 +748,95 @@ def run_game(input_map1=input_map):
                                     print("🎉 Boss level 3 đã tiêu diệt - Kết thúc hoặc chuyển cảnh!")
 
                                 boss_respawn_time = pygame.time.get_ticks()
-                                break  # ⚡ Thoát khỏi vòng for bắn vào boss ngay khi boss chết
+                                break
 
-
-
+            # Kiểm tra khi boss lv3 nâng cấp
+            if (boss_level == 3 and boss is not None and 
+                not boss_lv3_upgraded and 
+                boss_health <= menu.game_enemy_variables["boss_health"] * 0.2):
+                # Kích hoạt hiệu ứng nâng cấp và rung chấn cùng lúc
+                shake_time = 150
+                boss_message_display_time = 2500
+                current_boss_message = "upgrade"
+                boss_lv3_upgraded = True
+                boss_health = 800
+                boss_img = boss_lv3_frames[1]
+                pg.mixer.music.stop()
+                pg.mixer.music.load("data/nhacnen2.mp3")
+                pg.mixer.music.play(-1)
 
             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 1
-            # Khi đủ điểm, khởi động rung chấn và hiển thị chữ — chưa tạo boss
             if score >= 5 and boss is None and boss_level == 1 and not pending_boss_spawn:
-                shake_time = 90  # Rung chấn ~1.5 giây nếu 60 FPS
-                boss_message_display_time = 1500  # Hiển thị chữ 1.5 giây (cùng thời gian rung)
-                pending_boss_spawn = True  # Đánh dấu chuẩn bị xuất hiện boss
-                print(game_enemy_variables["boss_health"])  # Debug: kiểm tra xem có phải None không
+                shake_time = 150
+                boss_message_display_time = 2500
+                pending_boss_spawn = True
 
+            # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 2
+            if score >= 10 and boss is None and boss_level == 2 and not pending_boss_spawn:
+                shake_time = 150
+                boss_message_display_time = 2500
+                pending_boss_spawn = True
+
+            # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 3
+            if score >= 15 and boss is None and boss_level == 3 and not pending_boss_spawn:
+                shake_time = 150
+                boss_message_display_time = 2500
+                pending_boss_spawn = True
+                boss_lv3_upgraded = False  # Reset trạng thái nâng cấp
 
             # Khi rung chấn kết thúc, mới tạo boss
-            if pending_boss_spawn and shake_time == 0 and boss is None and boss_level == 1:
-                boss = [WIDTH // 2 - 50, 50]
-                boss_speed = 0.8
-                boss_img = pygame.image.load("data/boss1.png")
-                boss_img = pygame.transform.scale(boss_img, (100, 100))
-                boss_health = 300
+            if pending_boss_spawn and shake_time == 0 and boss is None:
+                if boss_level == 1:
+                    boss = [WIDTH // 2 - 50, 50]
+                    boss_speed = 0.8
+                    boss_img = pygame.image.load("data/boss1.png")
+                    boss_img = pygame.transform.scale(boss_img, (100, 100))
+                    boss_health = 300
+                    current_boss_message = "normal"
+                elif boss_level == 2:
+                    boss = [WIDTH // 2 - 60, 50]
+                    boss_speed = 0.4
+                    boss_img = boss_img_lv2
+                    boss_health = 400
+                    current_boss_message = "normal"
+                elif boss_level == 3:
+                    boss = [WIDTH // 2 - 75, 50]
+                    boss_speed = 0.6
+                    boss_health = 500
+                    boss_img = boss_lv3_frames[0]  # Dạng thường
+                    boss_bullet_delay = 2500
+                    # Chỉ hiển thị thông báo nếu chưa nâng cấp
+                    if not boss_lv3_upgraded:
+                        current_boss_message = "normal"
+                    else:
+                        current_boss_message = None
 
                 # Đổi nhạc nền khi boss xuất hiện
                 pg.mixer.music.stop()
                 pg.mixer.music.load("data/nhacnen2.mp3")
                 pg.mixer.music.play(-1)
 
-                boss1_chet = False
-                pending_boss_spawn = False  # Reset cờ
+                pending_boss_spawn = False
 
-            if boss is not None and boss_level == 1 and boss_health <= 0:
-                if not boss1_chet:  # Chỉ đổi nhạc lần đầu khi boss chết
-                                # Đổi lại nhạc nền khi boss lv1 chết
-                                pg.mixer.music.stop()
-                                pg.mixer.music.load("data/nhacnen1.mp3")
-                                pg.mixer.music.play(-1)
-                                boss1_chet = True
-                            
-                boss = None  # reset boss
-                boss_level = 2  # Chuẩn bị cho boss level 2
-                boss_respawn_time = pygame.time.get_ticks()            
-
-            if boss is not None and boss_level == 2 and boss_health <= 0:
-                if not boss2_chet:
-                    print("🔥 Boss cấp 2 bị tiêu diệt")
-                    boss2_chet = True  
-                    boss_respawn_time = pygame.time.get_ticks()
-                boss = None
-                boss_speed = 0
-                boss_health = 0
-                boss_level = 3
-
-
+            # Hiển thị chữ boss - Đảm bảo chỉ hiển thị một thông báo tại một thời điểm
+            if boss_message_display_time > 0 and current_boss_message is not None:
+                # Xóa màn hình trước khi vẽ thông báo mới
+                screen.fill((0, 0, 0))
+                screen.blit(background, (0, background_y))
+                screen.blit(background, (0, background_y - HEIGHT))
                 
-
-            # Xuất hiện boss lv tiếp theo sau khi boss lv cũ bị tiêu diệt 3 giây
-            # Xuất hiện boss lv tiếp theo sau khi boss cũ bị tiêu diệt 3 giây
-            if boss is None and boss_respawn_time is not None:
-                elapsed_time = pygame.time.get_ticks() - boss_respawn_time
-
-                # Hồi sinh boss lv2 nếu chưa chết và boss_level đang là 2
-                if not boss2_chet and boss_level == 2 and score >= 10 and elapsed_time > 3000:
-                    print("🔥 Hồi sinh boss lv2!")
-                    boss = [WIDTH // 2 - 60, 50]
-                    boss_speed = 0.4
-                    boss_img = boss_img_lv2
-                    boss_health = 400
-
-                # Hồi sinh boss lv3 nếu boss_level là 3 (và boss2 đã chết)
-                if boss2_chet and boss_level == 3 and score >= 15 and elapsed_time > 3000:
-                    print("🔥 Hồi sinh boss lv3!")
-                    boss = [WIDTH // 2 - 75, 50]
-                    boss_speed = 0.6
-                    boss_health = 500
-                    boss_img = boss_lv3_frames[0]  # dùng ảnh thường
-                    boss_bullet_delay = 2500
-
-
-            # Kiểm tra va chạm giữa đạn của boss và tàu
-            ship_center_x = ship_x + ship.get_width() // 2
-            ship_center_y = ship_y + ship.get_height() // 2
-
-            for bb in boss_bullets[:]:
-                if isinstance(bb, BossBulletLv1):
-                    bb.update()
-                    # Kiểm tra va chạm với tàu
-                    if ((bb.x - ship_center_x) ** 2 + (bb.y - ship_center_y) ** 2) ** 0.5 < 40:
-                        ship_health -= 10
-                        bb.active = False
-                    if not bb.active:
-                        boss_bullets.remove(bb)
-                elif len(bb) == 5 and bb[4] == 3:  # boss level 3
-                    # Boss lv3 kiểm tra đạn bắn vào tàu
-                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 50:
-                        boss_bullets.remove(bb)
-                        ship_health -= 10
-                else:
-                    # Boss lv1, lv2 kiểm tra đạn bắn vào tàu
-                    if ((bb[0] - ship_center_x) ** 2 + (bb[1] - ship_center_y) ** 2) ** 0.5 < 40:
-                        boss_bullets.remove(bb)
-                        ship_health -= 10
-
-
-
-
+                # Áp dụng rung chấn nếu có
+                if shake_time > 0:
+                    apply_screen_shake(screen)
+                
+                if current_boss_message == "upgrade":
+                    draw_boss_message(screen, boss_level, True)
+                elif current_boss_message == "normal":
+                    draw_boss_message(screen, boss_level, False)
+                
+                boss_message_display_time -= delta_time
+                if boss_message_display_time <= 0:
+                    current_boss_message = None
 
             # Hiển thị vụ nổ
             for explosion in explosions[:]:
@@ -726,6 +848,7 @@ def run_game(input_map1=input_map):
             for eb in enemy_bullets[:]:
                 if ((eb[0] - ship_x) ** 2 + (eb[1] - ship_y) ** 2) ** 0.5 < 40:
                     ship_health -= 10
+                    damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
                     enemy_bullets.remove(eb)
 
         
@@ -733,6 +856,21 @@ def run_game(input_map1=input_map):
             for bb in boss_bullets:
                 if isinstance(bb, BossBulletLv1):
                     bb.draw(screen)
+                elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
+                    # Vẽ hiệu ứng glow
+                    glow_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+                    # Vẽ glow bên ngoài
+                    pygame.draw.circle(glow_surface, (255, 0, 0, 50), 
+                                    (int(bb[0] + 20), int(bb[1] + 20)), 
+                                    25)
+                    # Vẽ glow bên trong
+                    pygame.draw.circle(glow_surface, (255, 0, 0, 100), 
+                                    (int(bb[0] + 20), int(bb[1] + 20)), 
+                                    15)
+                    screen.blit(glow_surface, (0, 0))
+                    
+                    # Vẽ đạn chính
+                    screen.blit(boss_bullet, (bb[0], bb[1]))
                 elif len(bb) == 5 and bb[4] == 3:  # boss level 3
                     angle = math.degrees(math.atan2(bb[3], bb[2])) - 90
                     rotated_bullet = pygame.transform.rotate(boss_bullet_img_lv3, -angle)
@@ -767,6 +905,8 @@ def run_game(input_map1=input_map):
             # Kiểm tra Game Over
             if ship_health <= 0:
                 game_over = True
+                # Xóa plasma beam khi game over
+                plasma_beams.clear()
 
         # Cập nhật plasma và kiểm tra va chạm
         for beam in plasma_beams[:]:
@@ -775,6 +915,7 @@ def run_game(input_map1=input_map):
                 # Kiểm tra va chạm với tàu
                 if beam.check_collision(ship_x, ship_y, ship.get_width(), ship.get_height()):
                     ship_health -= 5  # Tăng sát thương lên 5 máu mỗi giây
+                    damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
             if not beam.active:
                 plasma_beams.remove(beam)
 
@@ -785,7 +926,20 @@ def run_game(input_map1=input_map):
 
         # Vẽ tàu, gà, đạn
         if not game_over:
-            screen.blit(ship, (ship_x, ship_y)) 
+            # Vẽ vệt sáng trước
+            for i, (trail_x, trail_y) in enumerate(ship_trail):
+                # Tính độ trong suốt dựa trên vị trí trong trail
+                alpha = int(120 * (i + 1) / len(ship_trail))  # Nhạt hơn, max 120
+                faded_ship = ship.copy()
+                faded_ship.set_alpha(alpha)
+                screen.blit(faded_ship, (trail_x, trail_y))
+
+            # Vẽ tàu với hiệu ứng chớp nháy
+            if damage_flash_time > 0:
+                if damage_flash_time % 4 == 0:
+                    screen.blit(ship, (ship_x, ship_y))
+            else:
+                screen.blit(ship, (ship_x, ship_y))
             for chicken_x, chicken_y in chickens:
                 screen.blit(chicken_img, (chicken_x, chicken_y))
             for b in bullets:
@@ -796,8 +950,15 @@ def run_game(input_map1=input_map):
             for h in hearts:
                 screen.blit(heart_img, (h[0], h[1]))
 
-            score_text = FONT.render(f"Score: {score}", True, (255, 255, 255))
-            screen.blit(score_text, (WIDTH - 125, 10)) 
+            # Hiển thị điểm số với font RetroFont
+            score_font = pygame.font.Font("fonts/RetroFont.ttf", 30)
+            score_text = score_font.render(f"SCORE: {score}", True, (255, 255, 255))
+            # Thêm bóng đổ cho text
+            shadow = score_font.render(f"SCORE: {score}", True, (0, 0, 0))
+            shadow_rect = shadow.get_rect(center=(WIDTH - 90 + 2, 30 + 2))
+            score_rect = score_text.get_rect(center=(WIDTH - 90, 30))
+            screen.blit(shadow, shadow_rect)
+            screen.blit(score_text, score_rect)
 
             # Hiển thị thanh máu
             pygame.draw.rect(screen, (255, 0, 0), (10, 10, ship_health * 2, 20))
@@ -810,6 +971,10 @@ def run_game(input_map1=input_map):
         clock.tick(60) 
         pygame.display.update()
         
+        # Cập nhật thời gian chớp nháy
+        if damage_flash_time > 0:
+            damage_flash_time -= 1
+
 # Main menu function
 def main_menu():
     while True:
