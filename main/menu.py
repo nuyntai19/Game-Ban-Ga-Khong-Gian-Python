@@ -185,26 +185,26 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # EASy
                 if menus["game_mode"][0].rect.collidepoint(event.pos):   
-                    game_enemy_variables["chicken_speed"] = 0.7
-                    game_enemy_variables["enemy_fire_delay"] = 505
-                    game_enemy_variables["boss_bullet_delay"] = 200
-                    game_enemy_variables["heart_speed"] = 1
-                    game_enemy_variables["boss_health"] = 300
+                    game_enemy_variables["chicken_speed"] = 0.5
+                    game_enemy_variables["enemy_fire_delay"] = 3000
+                    game_enemy_variables["boss_bullet_delay"] = 1000
+                    game_enemy_variables["heart_speed"] = 2
+                    game_enemy_variables["boss_health"] = 1000
                 # MEDIUM
                 elif menus["game_mode"][1].rect.collidepoint(event.pos):
-                    game_enemy_variables["chicken_speed"] = 0.7*1.5
-                    game_enemy_variables["enemy_fire_delay"] = 505*1.5
-                    game_enemy_variables["boss_bullet_delay"] = 200*1.5
-                    game_enemy_variables["heart_speed"] = 1*1.5
-                    game_enemy_variables["boss_health"] = 300*1
+                    game_enemy_variables["chicken_speed"] = 0.5*1.5
+                    game_enemy_variables["enemy_fire_delay"] = 3000*1.5
+                    game_enemy_variables["boss_bullet_delay"] = 1000*1.5
+                    game_enemy_variables["heart_speed"] = 2*1.5
+                    game_enemy_variables["boss_health"] = 1000*1.5
                     
                 # HARD
                 elif menus["game_mode"][2].rect.collidepoint(event.pos):
-                    game_enemy_variables["chicken_speed"] = 0.7*2
-                    game_enemy_variables["enemy_fire_delay"] = 505*2
-                    game_enemy_variables["boss_bullet_delay"] = 200*2
-                    game_enemy_variables["heart_speed"] = 1*2
-                    game_enemy_variables["boss_health"] = 300*2
+                    game_enemy_variables["chicken_speed"] = 0.5*2
+                    game_enemy_variables["enemy_fire_delay"] = 3000*2
+                    game_enemy_variables["boss_bullet_delay"] = 1000*2
+                    game_enemy_variables["heart_speed"] = 2*2
+                    game_enemy_variables["boss_health"] = 1000*2
             return game_enemy_variables
 
     print(game_enemy_variables)
