@@ -13,6 +13,7 @@ input_map = {
 }
 
 game_enemy_variables = {
+            'current_mode': "easy",
             'chicken_speed': 0.5,
             'heart_speed': 2,
             'enemy_fire_delay': 3000,
@@ -50,7 +51,6 @@ textRect = text.get_rect()
 textRect.center = (WIDTH//2, HEIGHT//2 - 200)  
 
 # load ảnh cho các button
-
 # Start
 start_button_img = pygame.image.load("data/buttons/Start_Button.png")
 start_button = pygame.transform.scale(start_button_img, (298.5, 135.5))
@@ -183,8 +183,9 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # EASy
-                if menus["game_mode"][0].rect.collidepoint(event.pos):   
+                # EASY
+                if menus["game_mode"][0].rect.collidepoint(event.pos):
+                    game_enemy_variables["current_mode"] = "EASY"
                     game_enemy_variables["chicken_speed"] = 0.5
                     game_enemy_variables["enemy_fire_delay"] = 3000
                     game_enemy_variables["boss_bullet_delay"] = 1000
@@ -192,6 +193,7 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                     game_enemy_variables["boss_health"] = 1000
                 # MEDIUM
                 elif menus["game_mode"][1].rect.collidepoint(event.pos):
+                    game_enemy_variables["current_mode"] = "MEDIUM"
                     game_enemy_variables["chicken_speed"] = 0.5*1.5
                     game_enemy_variables["enemy_fire_delay"] = 3000*1.5
                     game_enemy_variables["boss_bullet_delay"] = 1000*1.5
@@ -200,14 +202,13 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                     
                 # HARD
                 elif menus["game_mode"][2].rect.collidepoint(event.pos):
+                    game_enemy_variables["current_mode"] = "HARD"
                     game_enemy_variables["chicken_speed"] = 0.5*2
                     game_enemy_variables["enemy_fire_delay"] = 3000*2
                     game_enemy_variables["boss_bullet_delay"] = 1000*2
                     game_enemy_variables["heart_speed"] = 2*2
                     game_enemy_variables["boss_health"] = 1000*2
-            return game_enemy_variables
-
-    print(game_enemy_variables)
+                print(game_enemy_variables)
     return game_enemy_variables
         
 # Options menu
@@ -230,6 +231,15 @@ def options( game_enemy_variables):
         screen.blit(BG, (0, 0))
         
         #tạo nút chỉnh độ khó
+        mode_text = Fontt.render("Current Mode: " + game_enemy_variables["current_mode"], True, (0, 255, 0))
+        if game_enemy_variables["current_mode"] == "EASY":
+            mode_text = Fontt.render("Current Mode: " + game_enemy_variables["current_mode"], True, (0, 255, 0))
+        if game_enemy_variables["current_mode"] == "MEDIUM":
+            mode_text = Fontt.render("Current Mode: " + game_enemy_variables["current_mode"], True, (255, 255, 0))
+        if game_enemy_variables["current_mode"] == "HARD":
+            mode_text = Fontt.render("Current Mode: " + game_enemy_variables["current_mode"], True, (255, 0, 0))
+        text_rect = mode_text.get_rect(center=(WIDTH // 2 , HEIGHT // 2 - 70))
+        screen.blit(mode_text, text_rect.topleft)
         update_buttons(menus["game_mode"])
         draw_buttons(menus["game_mode"])
         
