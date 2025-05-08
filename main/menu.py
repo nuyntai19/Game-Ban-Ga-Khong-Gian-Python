@@ -13,11 +13,11 @@ input_map = {
 }
 
 game_enemy_variables = {
-            'chicken_speed': 0.7, # Tốc độ di chuyển của gà
-            'heart_speed': 1,
-            'enemy_fire_delay': 1010, # Tốc độ bắn của boss
-            'boss_bullet_delay': 600,
-            'boss_health': 300,
+            'chicken_speed': 0.5,
+            'heart_speed': 2,
+            'enemy_fire_delay': 3000,
+            'boss_bullet_delay': 1000,
+            'boss_health': 1000,
 }
 
 game_ship_variables = {
@@ -187,14 +187,14 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                 if menus["game_mode"][0].rect.collidepoint(event.pos):   
                     game_enemy_variables["chicken_speed"] = 0.7
                     game_enemy_variables["enemy_fire_delay"] = 505
-                    game_enemy_variables["boss_bullet_delay"] = 400
+                    game_enemy_variables["boss_bullet_delay"] = 200
                     game_enemy_variables["heart_speed"] = 1
                     game_enemy_variables["boss_health"] = 300
                 # MEDIUM
                 elif menus["game_mode"][1].rect.collidepoint(event.pos):
                     game_enemy_variables["chicken_speed"] = 0.7*1.5
                     game_enemy_variables["enemy_fire_delay"] = 505*1.5
-                    game_enemy_variables["boss_bullet_delay"] = 400*1.5
+                    game_enemy_variables["boss_bullet_delay"] = 200*1.5
                     game_enemy_variables["heart_speed"] = 1*1.5
                     game_enemy_variables["boss_health"] = 300*1
                     
@@ -202,7 +202,7 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                 elif menus["game_mode"][2].rect.collidepoint(event.pos):
                     game_enemy_variables["chicken_speed"] = 0.7*2
                     game_enemy_variables["enemy_fire_delay"] = 505*2
-                    game_enemy_variables["boss_bullet_delay"] = 400*2
+                    game_enemy_variables["boss_bullet_delay"] = 200*2
                     game_enemy_variables["heart_speed"] = 1*2
                     game_enemy_variables["boss_health"] = 300*2
             return game_enemy_variables
