@@ -939,7 +939,7 @@ def run_game(input_map1=input_map):
                 boss_message_display_time = 2500
                 current_boss_message = "upgrade"
                 boss_lv3_upgraded = True
-                boss_health = 800
+                boss_health = int(menu.game_enemy_variables["boss_health"]) * 3
                 boss_img = boss_lv3_frames[1]
                 print("🎯 Boss lv3 đã nâng cấp!")  # Debug log
                 pg.mixer.music.stop()
@@ -979,25 +979,28 @@ def run_game(input_map1=input_map):
                     boss_speed = 0.8
                     boss_img = pygame.image.load("data/boss1.png")
                     boss_img = pygame.transform.scale(boss_img, (100, 100))
-                    boss_health = 300
+                    boss_health = menu.game_enemy_variables["boss_health"]
                     current_boss_message = "normal"
                     boss_entering = True
+                    print(boss_health)
                 elif boss_level == 2:
                     boss = [WIDTH // 2 - 60, -120]  # Bắt đầu từ trên màn hình
                     boss_speed = 0.8
                     boss_img = boss_img_lv2
-                    boss_health = 400
+                    boss_health = int(menu.game_enemy_variables["boss_health"]) * 2
                     current_boss_message = "normal"
                     boss_entering = True
+                    print(boss_health)
                 elif boss_level == 3:
                     boss = [WIDTH // 2 - 75, -150]  # Bắt đầu từ trên màn hình
                     boss_speed = 1.0
-                    boss_health = 500
+                    boss_health = int(menu.game_enemy_variables["boss_health"]) * 3
                     boss_img = boss_lv3_frames[0]
                     boss_bullet_delay = 2500
                     boss_entering = True
                     if not boss_lv3_upgraded:
                         current_boss_message = "normal"
+                        print(boss_health)
                     else:
                         current_boss_message = None
                 elif boss_level == 4:

@@ -13,12 +13,12 @@ input_map = {
 }
 
 game_enemy_variables = {
-            'current_mode': "easy",
+            'current_mode': "EASY",
             'chicken_speed': 0.5,
             'heart_speed': 2,
             'enemy_fire_delay': 3000,
             'boss_bullet_delay': 1000,
-            'boss_health': 1000,
+            'boss_health': 300,
 }
 
 game_ship_variables = {
@@ -190,24 +190,24 @@ def game_mode(events, game_enemy_variables = game_enemy_variables):
                     game_enemy_variables["enemy_fire_delay"] = 3000
                     game_enemy_variables["boss_bullet_delay"] = 1000
                     game_enemy_variables["heart_speed"] = 2
-                    game_enemy_variables["boss_health"] = 1000
+                    game_enemy_variables["boss_health"] = 300
                 # MEDIUM
                 elif menus["game_mode"][1].rect.collidepoint(event.pos):
                     game_enemy_variables["current_mode"] = "MEDIUM"
                     game_enemy_variables["chicken_speed"] = 0.5*1.5
-                    game_enemy_variables["enemy_fire_delay"] = 3000*1.5
-                    game_enemy_variables["boss_bullet_delay"] = 1000*1.5
+                    game_enemy_variables["enemy_fire_delay"] = 3000/1.5
+                    game_enemy_variables["boss_bullet_delay"] = 1000/1.5
                     game_enemy_variables["heart_speed"] = 2*1.5
-                    game_enemy_variables["boss_health"] = 1000*1.5
+                    game_enemy_variables["boss_health"] = 300*1.5
                     
                 # HARD
                 elif menus["game_mode"][2].rect.collidepoint(event.pos):
                     game_enemy_variables["current_mode"] = "HARD"
                     game_enemy_variables["chicken_speed"] = 0.5*2
-                    game_enemy_variables["enemy_fire_delay"] = 3000*2
-                    game_enemy_variables["boss_bullet_delay"] = 1000*2
+                    game_enemy_variables["enemy_fire_delay"] = 3000/2
+                    game_enemy_variables["boss_bullet_delay"] = 1000/2
                     game_enemy_variables["heart_speed"] = 2*2
-                    game_enemy_variables["boss_health"] = 1000*2
+                    game_enemy_variables["boss_health"] = 300*3
                 print(game_enemy_variables)
     return game_enemy_variables
         
