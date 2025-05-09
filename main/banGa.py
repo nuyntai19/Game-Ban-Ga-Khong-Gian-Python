@@ -64,6 +64,15 @@ boss_img = pygame.transform.scale(boss_img, (100, 140))
 boss_img_lv2 = pygame.image.load("data/boss2.png")
 boss_img_lv2 = pygame.transform.scale(boss_img_lv2, (120, 120))
 
+# Load hình boss lv4
+boss_img_lv4 = pygame.image.load("data/boss4.png")
+boss_img_lv4 = pygame.transform.scale(boss_img_lv4, (150, 150))
+
+# Load hình đạn boss lv4
+boss_bullet_img_lv4 = pygame.image.load("data/dan_Boss_LV4.png")
+boss_bullet_img_lv4 = pygame.transform.scale(boss_bullet_img_lv4, (60, 60))
+
+
 # Load hình boss lv3 (2 trạng thái)
 boss_lv3_frames = []
 boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangThuong.png"), (400, 250)))
@@ -97,6 +106,18 @@ BURST_COUNT = 10      # Số viên đạn trong mỗi đợt
 last_inner_cannon_time = 0
 INNER_CANNON_INTERVAL = 500  # Giảm từ 1000ms xuống 500ms (0.5 giây)
 
+lv4_wave_phase = 0
+
+wave_direction = 1  # 1 hoặc -1
+last_wave_switch_time = pygame.time.get_ticks()
+
+gap_index = 0
+gap_direction = 1
+gap_timer = pygame.time.get_ticks()
+
+# Điều chỉnh tốc độ di chuyển lỗ trống (ms)
+gap_move_delay = 120  # càng lớn càng chậm, thử 120-200ms
+
 class PlasmaBeam:
     def __init__(self, x, y, is_left=True):
         self.x = x
@@ -123,9 +144,9 @@ class PlasmaBeam:
         else:
             # Cập nhật vị trí x theo nòng súng
             if self.is_left:
-                self.x = boss_x + 98
+                self.x = boss_x + 60
             else:
-                self.x = boss_x + 302
+                self.x = boss_x + 350
             
             # Cập nhật animation
             self.animation_time = (pygame.time.get_ticks() - self.spawn_time) % 1000
@@ -241,6 +262,29 @@ class BossBulletLv1:
             bullet_rect = rotated_bullet.get_rect(center=(self.x + 20, self.y + 20))
             screen.blit(rotated_bullet, bullet_rect.topleft)
 
+class BossLv4WaveBullet:
+    def __init__(self, x, y, phase=0):
+        self.x0 = x
+        self.y = y
+        self.phase = phase
+        self.t = 0
+        self.speed = 1.3 # Tăng tốc độ di chuyển 
+        self.amplitude = 140 # Giảm biên độ dao động
+        self.frequency = 0.0011  # Giảm tần số dao động
+        self.active = True
+
+    def update(self):
+        self.t += 1
+        self.y += self.speed
+        # Tạo mẫu sóng sin đơn giản hơn
+        self.x = self.x0 + self.amplitude * math.sin(self.frequency * self.t + self.phase)
+        if self.y > HEIGHT + 60:
+            self.active = False
+
+    def draw(self, screen):
+        if self.active:
+            screen.blit(boss_bullet_img_lv4, (self.x, self.y))
+
 # Hàm vẽ nút chơi lại
 def draw_restart_button():
     restart_text = FONT.render("REPLAY", True, (255, 255, 255))
@@ -332,7 +376,10 @@ def apply_screen_shake(screen):
         screen.blit(background, (0, 0))
 
 def run_game(input_map1=input_map):
+    global lv4_wave_phase
     global chicken, background_y, background, shake_time, last_update_time, boss_message_display_time
+    global last_wave_switch_time, wave_direction
+    global gap_index, gap_direction, gap_timer
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
     ship_speed = menu.game_ship_variables["ship_speed"]
@@ -392,6 +439,8 @@ def run_game(input_map1=input_map):
 
     boss_bullet_delay = menu.game_enemy_variables["boss_bullet_delay"] # Tốc độ bắn của boss
     last_boss_bullet_time = pygame.time.get_ticks()
+    last_boss_bullet_time_lv4 = pygame.time.get_ticks()  # Thêm dòng này
+    boss_bullet_delay_lv4 = 120  # ms, chỉ dùng cho boss lv4
 
     score = 0 # Điểm số
     boss = None
@@ -523,6 +572,15 @@ def run_game(input_map1=input_map):
                         bb.active = False
                     if not bb.active:
                         boss_bullets.remove(bb)
+                elif isinstance(bb, BossLv4WaveBullet):
+                    bb.update()
+                    # Kiểm tra va chạm với tàu
+                    if ((bb.x - ship_center_x) ** 2 + (bb.y - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 20  # Sát thương của boss lv4 là 20
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        bb.active = False
+                    if not bb.active:
+                        boss_bullets.remove(bb)
                 elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
                     # Di chuyển đạn theo góc
                     bb[1] += 4  # Tăng tốc độ di chuyển xuống
@@ -561,14 +619,14 @@ def run_game(input_map1=input_map):
 
             # Boss bắn đạn
             if boss and current_time - last_boss_bullet_time > boss_bullet_delay and len(boss_bullets) < 300:
-                if boss_level == 1 and not boss_entering:  # Chỉ bắn khi đã xuất hiện xong
+                if boss_level == 1 and not boss_entering:
                     # Tạo đạn mới cho boss lv1
                     boss_bullets.append(BossBulletLv1(
                         boss[0] + boss_img.get_width() // 2 - 20,
                         boss[1] + boss_img.get_height()
                     ))
                     last_boss_bullet_time = current_time
-                elif boss_level == 2 and not boss_entering:  # Chỉ bắn khi đã xuất hiện xong
+                elif boss_level == 2 and not boss_entering:
                     # Tăng thời gian giữa các lần bắn và tốc độ đạn
                     if len(boss_bullets) < 30:  # Giảm số lượng đạn tối đa
                         for angle in [-45, 0, 45]:
@@ -578,12 +636,12 @@ def run_game(input_map1=input_map):
                                 angle,
                                 2
                             ])
-                elif boss_level == 3 and not boss_entering:  # Chỉ bắn khi đã xuất hiện xong
+                elif boss_level == 3 and not boss_entering:
                     if boss_lv3_upgraded:
                         # 🔹 Bắn plasma mỗi 5 giây
                         if current_time - last_plasma_time > PLASMA_INTERVAL:
-                            gun_left = (boss[0] + 120, boss[1] + boss_img.get_height() - 105)
-                            gun_right = (boss[0] + 280, boss[1] + boss_img.get_height() - 105)
+                            gun_left = (boss[0] + 200, boss[1] + boss_img.get_height() - 105) # +120 là dịch trái 120 pixel, +280 là dịch phải 280 pixel
+                            gun_right = (boss[0] + 380, boss[1] + boss_img.get_height() - 105)
                             plasma_beams.append(PlasmaBeam(*gun_left, is_left=True))
                             plasma_beams.append(PlasmaBeam(*gun_right, is_left=False))
                             last_plasma_time = current_time
@@ -623,7 +681,33 @@ def run_game(input_map1=input_map):
                                 3  # Boss level
                             ])
 
-                last_boss_bullet_time = current_time
+                elif boss_level == 4 and not boss_entering:
+                    if current_time - last_boss_bullet_time_lv4 > 2000:  # mỗi 2s bắn 1 hàng
+                        num_bullets = 12  # Số lượng viên đạn trên 1 hàng
+                        bullet_spacing = WIDTH // num_bullets
+                        scanner_y = 0  # Đạn xuất hiện từ trên màn hình
+
+                        # Điều chỉnh tốc độ di chuyển lỗ trống (ms)
+                        gap_move_delay = 1200  # càng lớn càng chậm
+
+                        if current_time - gap_timer > gap_move_delay:
+                            gap_index += gap_direction
+                            if gap_index >= num_bullets - 1:
+                                gap_index = num_bullets - 1
+                                gap_direction = -1
+                            elif gap_index <= 0:
+                                gap_index = 0
+                                gap_direction = 1
+                            gap_timer = current_time
+
+                        for i in range(num_bullets):
+                            if i == gap_index:
+                                continue  # chừa lỗ trống
+                            bullet_x = i * bullet_spacing
+                            boss_bullets.append(BossLv4WaveBullet(bullet_x, scanner_y, phase=0))
+                        last_boss_bullet_time_lv4 = current_time
+                if boss_level in [1, 2, 3]:
+                    last_boss_bullet_time = current_time # Giữ lại dòng này cho các boss khác
 
             # Gà bắn đạn
             current_time = pygame.time.get_ticks()
@@ -706,6 +790,15 @@ def run_game(input_map1=input_map):
                         bb.active = False
                     if not bb.active:
                         boss_bullets.remove(bb)
+                elif isinstance(bb, BossLv4WaveBullet):
+                    bb.update()
+                    # Kiểm tra va chạm với tàu
+                    if ((bb.x - ship_center_x) ** 2 + (bb.y - ship_center_y) ** 2) ** 0.5 < 40:
+                        ship_health -= 20  # Sát thương của boss lv4 là 20
+                        damage_flash_time = 30  # Kích hoạt hiệu ứng chớp nháy
+                        bb.active = False
+                    if not bb.active:
+                        boss_bullets.remove(bb)
                 elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
                     # Di chuyển đạn theo góc
                     bb[1] += 4  # Tăng tốc độ di chuyển xuống
@@ -783,25 +876,49 @@ def run_game(input_map1=input_map):
                                 boss_health -= 5  # Giảm từ 10 xuống 5 cho boss level 3
                             else:
                                 boss_health -= 10  # Giữ nguyên sát thương cho boss level 1 và 2
-                            if boss_level == 3 and not boss_lv3_upgraded and boss_health <= menu.game_enemy_variables["boss_health"] * 0.2:
-                                # Kích hoạt hiệu ứng nâng cấp và rung chấn cùng lúc
-                                shake_time = 150
+                            if boss_level == 3 and boss_lv3_upgraded and score >= 20:
+                                plasma_beams.clear()
+                                boss_level = 4
+                                print("🎉 Boss level 3 đã tiêu diệt - Sang boss level 4!")
+                                # Tạo boss lv4 ngay lập tức
+                                boss = [WIDTH // 2 - boss_img_lv4.get_width() // 2, -150]
+                                boss_speed = 1.0
+                                boss_health = 600
+                                boss_img = boss_img_lv4
+                                boss_bullet_delay = 2000
+                                boss_entering = True
+                                current_boss_message = "normal"
                                 boss_message_display_time = 2500
-                                current_boss_message = "upgrade"
-                                boss_lv3_upgraded = True
-                                boss_health = 800
-                                boss_img = boss_lv3_frames[1]
-                                pg.mixer.music.stop()
-                                pg.mixer.music.load("data/nhacnen2.mp3")
-                                pg.mixer.music.play(-1)
+                                shake_time = 150
+                                print(f"🎯 Boss lv4 được tạo tại vị trí: {boss}")  # Debug log
                             if boss_health <= 0:
                                 print(f"🔥 Boss {boss_level} bị tiêu diệt, đặt boss = None")
                                 # Xóa plasma beam ngay khi boss chết
                                 if boss_level == 3 and boss_lv3_upgraded:
                                     plasma_beams.clear()
-                                boss = None
-                                boss_speed = 0
-                                boss_health = 0
+                                    if score >= 20:  # Kiểm tra điểm trước
+                                        print("🎯 Đủ điểm để chuyển sang boss lv4")
+                                        boss_level = 4  # Chuyển sang boss lv4
+                                        # Tạo boss lv4 ngay lập tức
+                                        boss = [WIDTH // 2 - boss_img_lv4.get_width() // 2, -150]
+                                        boss_speed = 1.0
+                                        boss_health = 600
+                                        boss_img = boss_img_lv4
+                                        boss_entering = True
+                                        current_boss_message = "normal"
+                                        boss_message_display_time = 2500
+                                        shake_time = 150
+                                        last_boss_bullet_time_lv4 = pygame.time.get_ticks()  # Reset thời gian bắn
+                                        print(f"🎯 Boss lv4 được tạo tại vị trí: {boss}")
+                                    else:
+                                        print("🎯 Boss lv3 nâng cấp bị tiêu diệt nhưng chưa đủ điểm")
+                                        boss = None
+                                        boss_speed = 0
+                                        boss_health = 0
+                                else:
+                                    boss = None
+                                    boss_speed = 0
+                                    boss_health = 0
 
                                 if boss_level == 1:
                                     boss1_chet = True
@@ -809,8 +926,6 @@ def run_game(input_map1=input_map):
                                 elif boss_level == 2:
                                     boss2_chet = True
                                     boss_level = 3
-                                elif boss_level == 3:
-                                    print("🎉 Boss level 3 đã tiêu diệt - Kết thúc hoặc chuyển cảnh!")
 
                                 boss_respawn_time = pygame.time.get_ticks()
                                 break
@@ -826,6 +941,7 @@ def run_game(input_map1=input_map):
                 boss_lv3_upgraded = True
                 boss_health = 800
                 boss_img = boss_lv3_frames[1]
+                print("🎯 Boss lv3 đã nâng cấp!")  # Debug log
                 pg.mixer.music.stop()
                 pg.mixer.music.load("data/nhacnen2.mp3")
                 pg.mixer.music.play(-1)
@@ -843,11 +959,18 @@ def run_game(input_map1=input_map):
                 pending_boss_spawn = True
 
             # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 3
-            if score >= 15 and boss is None and boss_level == 3 and not pending_boss_spawn:
+            if score >= 15 and boss is None and boss_level == 3 and not pending_boss_spawn and not boss_lv3_upgraded:
                 shake_time = 150
                 boss_message_display_time = 2500
                 pending_boss_spawn = True
                 boss_lv3_upgraded = False  # Reset trạng thái nâng cấp
+
+            # Kiểm tra nếu đạt điểm để xuất hiện boss cấp 4
+            if score >= 20 and boss is None and boss_level == 4 and not pending_boss_spawn:
+                print("🎯 Đủ điểm để xuất hiện boss lv4")
+                shake_time = 150
+                boss_message_display_time = 2500
+                pending_boss_spawn = True
 
             # Khi rung chấn kết thúc, mới tạo boss
             if pending_boss_spawn and shake_time == 0 and boss is None:
@@ -872,30 +995,47 @@ def run_game(input_map1=input_map):
                     boss_health = 500
                     boss_img = boss_lv3_frames[0]
                     boss_bullet_delay = 2500
-                    boss_entering = True  # Thêm biến để kiểm soát trạng thái xuất hiện
+                    boss_entering = True
                     if not boss_lv3_upgraded:
                         current_boss_message = "normal"
                     else:
                         current_boss_message = None
+                elif boss_level == 4:
+                    boss = [WIDTH // 2 - boss_img_lv4.get_width() // 2, -150]
+                    boss_speed = 1.0
+                    boss_health = 600
+                    boss_img = boss_img_lv4
+                    boss_entering = True
+                    current_boss_message = "normal"
+                    last_boss_bullet_time_lv4 = pygame.time.get_ticks()  # Reset thời gian bắn riêng
 
                 pending_boss_spawn = False
 
             # Cập nhật vị trí boss
             if boss is not None:
-                if (boss_level == 1 or boss_level == 2 or boss_level == 3) and boss_entering:
-                    # Di chuyển xuống cho đến khi đạt vị trí mong muốn
-                    if boss[1] < 50:  # Vị trí cuối cùng
-                        boss[1] += 2  # Tốc độ di chuyển xuống
+                if (boss_level == 1 or boss_level == 2 or boss_level == 3 or boss_level == 4) and boss_entering:
+                    # Boss lv4 chỉ di chuyển xuống, không đổi X
+                    if boss_level == 4:
+                        boss[0] = WIDTH // 2 - boss_img.get_width() // 2  # Giữ X ở giữa
+                    if boss[1] < 50:
+                        boss[1] += 2
                     else:
-                        boss_entering = False  # Kết thúc hiệu ứng xuất hiện
+                        boss_entering = False
                 else:
-                    # Di chuyển qua lại bình thường
-                    boss[0] += boss_speed
-                    if boss[0] <= 0 or boss[0] >= WIDTH - boss_img.get_width():
-                        boss_speed = -boss_speed
+                    if boss_level == 4:
+                        boss[0] = WIDTH // 2 - boss_img.get_width() // 2  # Giữ X ở giữa
+                    else:
+                        boss[0] += boss_speed
+                        if boss[0] <= 0 or boss[0] >= WIDTH - boss_img.get_width():
+                            boss_speed = -boss_speed
 
             # Hiển thị chữ boss - Đảm bảo chỉ hiển thị một thông báo tại một thời điểm
             if boss_message_display_time > 0 and current_boss_message is not None:
+                print(f"🎯 Đang hiển thị thông báo boss:")  # Debug log
+                print(f"- Boss level: {boss_level}")
+                print(f"- Message time: {boss_message_display_time}")
+                print(f"- Current message: {current_boss_message}")
+                
                 # Xóa màn hình trước khi vẽ thông báo mới
                 screen.fill((0, 0, 0))
                 screen.blit(background, (0, background_y))
@@ -931,6 +1071,8 @@ def run_game(input_map1=input_map):
             # Hiển thị đạn của boss
             for bb in boss_bullets:
                 if isinstance(bb, BossBulletLv1):
+                    bb.draw(screen)
+                elif isinstance(bb, BossLv4WaveBullet):
                     bb.draw(screen)
                 elif len(bb) == 4 and bb[3] == 2:  # Boss lv2
                     # Vẽ hiệu ứng glow
@@ -975,6 +1117,8 @@ def run_game(input_map1=input_map):
                 elif boss_level == 3:
                     frame_index = 1 if boss_lv3_upgraded else 0
                     screen.blit(boss_lv3_frames[frame_index], (boss[0], boss[1]))
+                elif boss_level == 4:
+                    screen.blit(boss_img_lv4, (boss[0], boss[1]))
 
 
 
@@ -1066,12 +1210,17 @@ def run_game(input_map1=input_map):
             game_over_text = FONT.render("GAME OVER!", True, (255, 255, 255))
             screen.blit(game_over_text, (WIDTH // 2 - 80, HEIGHT // 2))
             restart_button = draw_restart_button()  # Vẽ nút chơi lại
-        clock.tick(60) 
+        clock.tick(60)  
         pygame.display.update()
         
         # Cập nhật thời gian chớp nháy
         if damage_flash_time > 0:
             damage_flash_time -= 1
+
+        # Kiểm tra đổi hướng sóng
+        if current_time - last_wave_switch_time > 1000:  # 1 giây
+            wave_direction *= -1
+            last_wave_switch_time = current_time
 
 # Main menu function
 def main_menu():
