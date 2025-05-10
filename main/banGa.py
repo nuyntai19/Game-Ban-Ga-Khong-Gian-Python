@@ -3,6 +3,7 @@ import random
 import menu
 from menu import *
 import math
+import pygame.gfxdraw
 
 # Khởi tạo pygame
 pygame.init()
@@ -41,7 +42,7 @@ heart_img = pygame.transform.scale(heart_img, (50, 50))
 
 # Đạn của gà
 enemy_bullet_img = pygame.image.load("data/dan_ga.png")
-enemy_bullet = pygame.transform.scale(enemy_bullet_img, (40, 40))
+enemy_bullet = pygame.transform.scale(enemy_bullet_img, (30, 30))
 
 # Đạn của boss lv1
 boss_bullet_img = pygame.image.load("data/danBossLV1.png")
@@ -57,8 +58,8 @@ explosion_img = pygame.transform.scale(explosion_img, (50, 50))
 explosions = []
 
 # Load hình boss
-boss_img = pygame.image.load("data/boss1.png")
-boss_img = pygame.transform.scale(boss_img, (100, 140))
+boss_img = pygame.image.load("data/boss1_2.png")
+boss_img = pygame.transform.scale(boss_img, (140, 140))
 
 # Load hình boss cấp 2
 boss_img_lv2 = pygame.image.load("data/boss2.png")
@@ -75,8 +76,8 @@ boss_bullet_img_lv4 = pygame.transform.scale(boss_bullet_img_lv4, (60, 60))
 
 # Load hình boss lv3 (2 trạng thái)
 boss_lv3_frames = []
-boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangThuong.png"), (400, 250)))
-boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangNangCap.png"), (400, 250)))
+boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangThuong.png"), (350, 250)))
+boss_lv3_frames.append(pygame.transform.scale(pygame.image.load("data/boss3_dangNangCap.png"), (350, 250)))
 
 # Load hình hộp quà
 gift_img = pygame.image.load("data/GIFT.png")
@@ -146,7 +147,7 @@ class PlasmaBeam:
             if self.is_left:
                 self.x = boss_x + 60
             else:
-                self.x = boss_x + 350
+                self.x = boss_x + 300
             
             # Cập nhật animation
             self.animation_time = (pygame.time.get_ticks() - self.spawn_time) % 1000
@@ -375,11 +376,59 @@ def apply_screen_shake(screen):
         # Khi hết rung chấn, hiển thị màn hình bình thường
         screen.blit(background, (0, 0))
 
+# Thêm lại class Firework và Particle cho hiệu ứng pháo hoa
+class Particle:
+    def __init__(self, x, y, color):
+        self.x = x
+        self.y = y
+        self.radius = random.randint(2, 4)
+        self.color = color
+        self.angle = random.uniform(0, 2 * math.pi)
+        self.speed = random.uniform(2, 6)
+        self.life = random.randint(30, 60)
+        self.gravity = 0.08
+        self.vx = math.cos(self.angle) * self.speed
+        self.vy = math.sin(self.angle) * self.speed
+
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+        self.vy += self.gravity
+        self.life -= 1
+        self.radius = max(0, self.radius - 0.05)
+
+    def draw(self, screen):
+        if self.life > 0 and self.radius > 0:
+            pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.radius))
+
+class Firework:
+    def __init__(self, x, y):
+        self.particles = []
+        color = random.choice([(255,0,0),(0,255,0),(0,0,255),(255,255,0),(255,0,255),(0,255,255),(255,128,0)])
+        for _ in range(30):
+            self.particles.append(Particle(x, y, color))
+        self.active = True
+
+    def update(self):
+        for p in self.particles:
+            p.update()
+        self.particles = [p for p in self.particles if p.life > 0 and p.radius > 0]
+        if not self.particles:
+            self.active = False
+
+    def draw(self, screen):
+        for p in self.particles:
+            p.draw(screen)
+
 def run_game(input_map1=input_map):
     global lv4_wave_phase
     global chicken, background_y, background, shake_time, last_update_time, boss_message_display_time
     global last_wave_switch_time, wave_direction
     global gap_index, gap_direction, gap_timer
+    # Thêm biến quản lý chiến thắng và pháo hoa
+    game_won = False
+    fireworks = []
+    firework_timer = 0
     # Reset các biến game
     ship_x, ship_y = WIDTH // 2, HEIGHT - 100
     ship_speed = menu.game_ship_variables["ship_speed"]
@@ -467,6 +516,10 @@ def run_game(input_map1=input_map):
     showing_upgrade_message = False  # Cờ để kiểm soát việc hiển thị thông báo nâng cấp
 
     clock = pygame.time.Clock()
+
+    # Thêm biến background win
+    win_bg_img = pygame.image.load("data/bg7.png")
+    win_bg_img = pygame.transform.scale(win_bg_img, (WIDTH, HEIGHT))
 
     while running:
         current_time = pygame.time.get_ticks()
@@ -640,8 +693,8 @@ def run_game(input_map1=input_map):
                     if boss_lv3_upgraded:
                         # 🔹 Bắn plasma mỗi 5 giây
                         if current_time - last_plasma_time > PLASMA_INTERVAL:
-                            gun_left = (boss[0] + 200, boss[1] + boss_img.get_height() - 105) # +120 là dịch trái 120 pixel, +280 là dịch phải 280 pixel
-                            gun_right = (boss[0] + 380, boss[1] + boss_img.get_height() - 105)
+                            gun_left = (boss[0] + 30, boss[1] + boss_img.get_height() - 105) # +120 là dịch trái 120 pixel, +280 là dịch phải 280 pixel
+                            gun_right = (boss[0] + 280, boss[1] + boss_img.get_height() - 105)
                             plasma_beams.append(PlasmaBeam(*gun_left, is_left=True))
                             plasma_beams.append(PlasmaBeam(*gun_right, is_left=False))
                             last_plasma_time = current_time
@@ -876,7 +929,7 @@ def run_game(input_map1=input_map):
                                 boss_health -= 5  # Giảm từ 10 xuống 5 cho boss level 3
                             else:
                                 boss_health -= 10  # Giữ nguyên sát thương cho boss level 1 và 2
-                            if boss_level == 3 and boss_lv3_upgraded and score >= 20:
+                            if boss_level == 3 and boss_lv3_upgraded and score >= 25:
                                 plasma_beams.clear()
                                 boss_level = 4
                                 print("🎉 Boss level 3 đã tiêu diệt - Sang boss level 4!")
@@ -892,14 +945,22 @@ def run_game(input_map1=input_map):
                                 shake_time = 150
                                 print(f"🎯 Boss lv4 được tạo tại vị trí: {boss}")  # Debug log
                             if boss_health <= 0:
+                                # Nếu là boss lv4 thì chiến thắng
+                                if boss_level == 4:
+                                    game_won = True
+                                    win_time = pygame.time.get_ticks()
+                                    # Tạo pháo hoa ban đầu
+                                    for _ in range(6):
+                                        fireworks.append(Firework(random.randint(100, WIDTH-100), random.randint(100, HEIGHT-200)))
+                                    boss = None
+                                    boss_level = 0
                                 print(f"🔥 Boss {boss_level} bị tiêu diệt, đặt boss = None")
                                 # Xóa plasma beam ngay khi boss chết
                                 if boss_level == 3 and boss_lv3_upgraded:
                                     plasma_beams.clear()
-                                    if score >= 20:  # Kiểm tra điểm trước
+                                    if score >= 20:
                                         print("🎯 Đủ điểm để chuyển sang boss lv4")
-                                        boss_level = 4  # Chuyển sang boss lv4
-                                        # Tạo boss lv4 ngay lập tức
+                                        boss_level = 4
                                         boss = [WIDTH // 2 - boss_img_lv4.get_width() // 2, -150]
                                         boss_speed = 1.0
                                         boss_health = 600
@@ -908,7 +969,7 @@ def run_game(input_map1=input_map):
                                         current_boss_message = "normal"
                                         boss_message_display_time = 2500
                                         shake_time = 150
-                                        last_boss_bullet_time_lv4 = pygame.time.get_ticks()  # Reset thời gian bắn
+                                        last_boss_bullet_time_lv4 = pygame.time.get_ticks()
                                         print(f"🎯 Boss lv4 được tạo tại vị trí: {boss}")
                                     else:
                                         print("🎯 Boss lv3 nâng cấp bị tiêu diệt nhưng chưa đủ điểm")
@@ -919,14 +980,12 @@ def run_game(input_map1=input_map):
                                     boss = None
                                     boss_speed = 0
                                     boss_health = 0
-
                                 if boss_level == 1:
                                     boss1_chet = True
                                     boss_level = 2
                                 elif boss_level == 2:
                                     boss2_chet = True
                                     boss_level = 3
-
                                 boss_respawn_time = pygame.time.get_ticks()
                                 break
 
@@ -1224,6 +1283,66 @@ def run_game(input_map1=input_map):
         if current_time - last_wave_switch_time > 1000:  # 1 giây
             wave_direction *= -1
             last_wave_switch_time = current_time
+
+        # Vẽ hiệu ứng chiến thắng
+        if game_won:
+            # Vẽ background win
+            screen.blit(win_bg_img, (0, 0))
+            # Phủ lớp mờ đen nhẹ (chỉ 1 lần mỗi frame)
+            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 160))
+            screen.blit(overlay, (0, 0))
+            # Thông báo win: chữ lớn, vàng, bóng đổ, font đẹp
+            win_font = pygame.font.Font(None, 100)
+            shadow = win_font.render("You have won the game!", True, (0,0,0))
+            shadow_rect = shadow.get_rect(center=(WIDTH // 2 + 4, HEIGHT // 2 - 56 + 4))
+            screen.blit(shadow, shadow_rect)
+            win_text = win_font.render("You have won the game!", True, (255, 215, 0))
+            win_rect = win_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 56))
+            screen.blit(win_text, win_rect)
+            # Hiệu ứng pháo hoa
+            if pygame.time.get_ticks() % 30 == 0 and len(fireworks) < 10:
+                fireworks.append(Firework(random.randint(100, WIDTH-100), random.randint(100, HEIGHT-200)))
+            for fw in fireworks[:]:
+                fw.update()
+                fw.draw(screen)
+                if not fw.active:
+                    fireworks.remove(fw)
+            # Nút REPLAY đẹp
+            restart_button = draw_replay_button_custom()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    if restart_button.collidepoint(mouse_x, mouse_y):
+                        game_won = False
+                        run_game()
+                        return
+            pygame.display.update()
+            clock.tick(60)
+            continue
+
+# Hàm vẽ nút REPLAY đẹp hơn
+def draw_replay_button_custom():
+    btn_w, btn_h = 220, 70
+    btn_x = WIDTH // 2 - btn_w // 2
+    btn_y = HEIGHT // 2 + 60
+    # Vẽ bo tròn
+    button_rect = pygame.Rect(btn_x, btn_y, btn_w, btn_h)
+    pygame.gfxdraw.box(screen, button_rect, (0, 120, 255, 220))
+    pygame.draw.rect(screen, (255,255,255), button_rect, 4, border_radius=30)
+    # Bóng đổ
+    shadow_font = pygame.font.Font(None, 60)
+    shadow = shadow_font.render("REPLAY", True, (0,0,0))
+    shadow_rect = shadow.get_rect(center=(WIDTH//2+3, btn_y+btn_h//2+3))
+    screen.blit(shadow, shadow_rect)
+    # Chữ chính
+    replay_font = pygame.font.Font(None, 60)
+    replay_text = replay_font.render("REPLAY", True, (255,255,255))
+    replay_rect = replay_text.get_rect(center=(WIDTH//2, btn_y+btn_h//2))
+    screen.blit(replay_text, replay_rect)
+    return button_rect
 
 # Main menu function
 def main_menu():
